@@ -65,7 +65,7 @@ delete_subfolder_or_file() {
 
       if [ "${#files[@]}" -eq 0 ]; then
         echo "No files found in $SUBFOLDER"
-       exit 1
+        exit 1
       fi
 
       echo "Files in $SUBFOLDER:"
@@ -96,127 +96,136 @@ delete_subfolder_or_file() {
   esac
 }
 
-echo "What would you like to do?"
-echo "s) Spoof location"
-echo "d) Delete subfolder or file"
-read -rp "Enter your choice (s or d): " main_choice
+while true; do
+  echo "What would you like to do?"
+  echo "s) Spoof location"
+  echo "d) Delete subfolder or file"
+  read -rp "Enter your choice (s or d): " main_choice
 
-case "$main_choice" in
-  s*)
-    choose_or_create_subfolder
-    echo ""
-    echo "Choose mode:"
-    echo "c) Choose coordinates from a file"
-    echo "e) Enter coordinates manually"
-    read -rp "Enter mode (c or e): " mode
+  case "$main_choice" in
+    s*)
+      choose_or_create_subfolder
+      echo ""
+      echo "Choose mode:"
+      echo "c) Choose coordinates from a file"
+      echo "e) Enter coordinates manually"
+      read -rp "Enter mode (c or e): " mode
 
-    case "$mode" in
-      c*)
-        echo ""
-        echo "Files in subfolder:"
-        shopt -s nullglob
-        files=("$SUBFOLDER"/*)
-        shopt -u nullglob
-        count=${#files[@]}
+      case "$mode" in
+        c*)
+          echo ""
+          echo "Files in subfolder:"
+          shopt -s nullglob
+          files=("$SUBFOLDER"/*)
+          shopt -u nullglob
+          count=${#files[@]}
 
-        if [ "$count" -eq 0 ]; then
-          echo "No files found in $SUBFOLDER"
-          exit 1
-        fi
+          if [ "$count" -eq 0 ]; then
+            echo "No files found in $SUBFOLDER"
+            exit 1
+          fi
 
-        for i in "${!files[@]}"; do
-          filename=$(basename "${files[$i]}")
-          echo "$((i+1))) $filename"
-        done
+          for i in "${!files[@]}"; do
+            filename=$(basename "${files[$i]}")
+            echo "$((i+1))) $filename"
+          done
 
-        read -rp "Choose a file number: " filenum
+          read -rp "Choose a file number: " filenum
 
-        if ! [[ "$filenum" =~ ^[0-9]+$ ]] || [ "$filenum" -lt 1 ] || [ "$filenum" -gt "$count" ]; then
-          echo "Invalid selection."
-          exit 1
-        fi
-
-        selected_file="${files[$((filenum-1))]}"
-        echo "You selected: $(basename "$selected_file")"
-
-        line=$(grep -Eo '\([^)]+\)' "$selected_file" | shuf -n 1)
-        clean_line=$(echo "$line" | tr -d '()')
-        IFS=',' read -r lat lon <<< "$clean_line"
-        lat=$(echo "$lat" | xargs)
-        lon=$(echo "$lon" | xargs)
-        ;;
-      e*)
-        read -rp "Enter coordinates like (48.1234, 11.5678): " coords
-        coords_clean=$(echo "$coords" | tr -d '()')
-        IFS=',' read -r lat lon <<< "$coords_clean"
-        lat=$(echo "$lat" | xargs)
-        lon=$(echo "$lon" | xargs)
-
-        echo ""
-        echo "Where would you like to save the coordinates?"
-        echo "c) Create new file"
-        echo "a) Add to existing file"
-        echo "d) Dont save"
-        read -rp "Enter choice (c,a or d): " save_choice
-
-        case "$save_choice" in
-          c*)
-            read -rp "Enter new filename (without path): " newfile
-            filepath="$SUBFOLDER/$newfile"
-            if [ -e "$filepath" ]; then
-              echo "Error: File already exists."
-              exit 1
-            fi
-            echo "($lat, $lon)" > "$filepath"
-            echo "Coordinates saved to $filepath"
-            ;;
-          a*)
-            echo "Available files in subfolder:"
-            shopt -s nullglob
-            files=("$SUBFOLDER"/*)
-            shopt -u nullglob
-            for i in "${!files[@]}"; do
-              filename=$(basename "${files[$i]}")
-              echo "$((i+1))) $filename"
-            done
-            read -rp "Choose a file number to append to: " fileappend
-            if ! [[ "$fileappend" =~ ^[0-9]+$ ]] || [ "$fileappend" -lt 1 ] || [ "$fileappend" -gt "${#files[@]}" ]; then
-              echo "Invalid file selection."
-              exit 1
-            fi
-            appendfile="${files[$((fileappend-1))]}"
-            echo "($lat, $lon)" >> "$appendfile"
-            echo "Appended to $(basename "$appendfile")"
-            ;;
-          d*)
-            echo "Coordinates not saved."
-            ;;
-          *)
+          if ! [[ "$filenum" =~ ^[0-9]+$ ]] || [ "$filenum" -lt 1 ] || [ "$filenum" -gt "$count" ]; then
             echo "Invalid selection."
             exit 1
-            ;;
-        esac
-        ;;
-      *)
-        echo "Invalid mode selected."
-        exit 1
-        ;;
-    esac
+          fi
 
-    echo "Coordinates: $lat, $lon"
-    read -rp "Do you really want to spoof this location? (y/n): " confirm
-    if [ "$confirm" = "y" ]; then
-      echo "Starting locsim with coordinates: $lat, $lon"
-      locsim start "$lat" "$lon"
-    else
-      echo "Location spoofing canceled."
-    fi
-    ;;
-  d*)
-    delete_subfolder_or_file
-    ;;
-  *)
-    echo "Invalid main choice."
-    exit 1
-    ;;
-esac
+          selected_file="${files[$((filenum-1))]}"
+          echo "You selected: $(basename "$selected_file")"
+
+          line=$(grep -Eo '\([^)]+\)' "$selected_file" | shuf -n 1)
+          clean_line=$(echo "$line" | tr -d '()')
+          IFS=',' read -r lat lon <<< "$clean_line"
+          lat=$(echo "$lat" | xargs)
+          lon=$(echo "$lon" | xargs)
+          ;;
+        e*)
+          read -rp "Enter coordinates like (48.1234, 11.5678): " coords
+          coords_clean=$(echo "$coords" | tr -d '()')
+          IFS=',' read -r lat lon <<< "$coords_clean"
+          lat=$(echo "$lat" | xargs)
+          lon=$(echo "$lon" | xargs)
+
+          echo ""
+          echo "Where would you like to save the coordinates?"
+          echo "c) Create new file"
+          echo "a) Add to existing file"
+          echo "d) Dont save"
+          read -rp "Enter choice (c,a or d): " save_choice
+
+          case "$save_choice" in
+            c*)
+              read -rp "Enter new filename (without path): " newfile
+              filepath="$SUBFOLDER/$newfile"
+              if [ -e "$filepath" ]; then
+                echo "Error: File already exists."
+                exit 1
+              fi
+              echo "($lat, $lon)" > "$filepath"
+              echo "Coordinates saved to $filepath"
+              ;;
+            a*)
+              echo "Available files in subfolder:"
+              shopt -s nullglob
+              files=("$SUBFOLDER"/*)
+              shopt -u nullglob
+              for i in "${!files[@]}"; do
+                filename=$(basename "${files[$i]}")
+                echo "$((i+1))) $filename"
+              done
+              read -rp "Choose a file number to append to: " fileappend
+              if ! [[ "$fileappend" =~ ^[0-9]+$ ]] || [ "$fileappend" -lt 1 ] || [ "$fileappend" -gt "${#files[@]}" ]; then
+                echo "Invalid file selection."
+                exit 1
+              fi
+              appendfile="${files[$((fileappend-1))]}"
+              echo "($lat, $lon)" >> "$appendfile"
+              echo "Appended to $(basename "$appendfile")"
+              ;;
+            d*)
+              echo "Coordinates not saved."
+              ;;
+            *)
+              echo "Invalid selection."
+              exit 1
+              ;;
+          esac
+          ;;
+        *)
+          echo "Invalid mode selected."
+          exit 1
+          ;;
+      esac
+
+      echo "Coordinates: $lat, $lon"
+      read -rp "Do you really want to spoof this location? (y/n): " confirm
+      if [ "$confirm" = "y" ]; then
+        echo "Starting locsim with coordinates: $lat, $lon"
+        locsim start "$lat" "$lon"
+      else
+        echo "Location spoofing canceled."
+      fi
+      ;;
+    d*)
+      delete_subfolder_or_file
+      ;;
+    *)
+      echo "Invalid main choice."
+      exit 1
+      ;;
+  esac
+
+  # Ask if the user wants to continue or exit
+  read -rp "Do you want to perform another action? (y/n): " continue_choice
+  if [[ "$continue_choice" != "y" && "$continue_choice" != "Y" ]]; then
+    echo "Exiting."
+    break
+  fi
+done
