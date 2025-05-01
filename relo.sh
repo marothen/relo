@@ -1,6 +1,8 @@
 #!/bin/bash
 
 BASE_DIR="./locations"
+CURRENT_LOCATION=""
+
 mkdir -p "$BASE_DIR"
 
 choose_or_create_subfolder() {
@@ -104,15 +106,20 @@ while true; do
 
   case "$main_choice" in
     s*)
-      choose_or_create_subfolder
       echo ""
       echo "Choose mode:"
       echo "c) Choose coordinates from a file"
       echo "e) Enter coordinates manually"
-      read -rp "Enter mode (c or e): " mode
+      if [ -n "$CURRENT_LOCATION" ]; then
+        echo "u) Use last spoofed location ($CURRENT_LOCATION)"
+        read -rp "Enter mode (c, e or u): " mode
+      else
+        read -rp "Enter mode (c or e): " mode
+      fi
 
       case "$mode" in
         c*)
+          choose_or_create_subfolder
           echo ""
           echo "Files in subfolder:"
           shopt -s nullglob
@@ -147,6 +154,7 @@ while true; do
           lon=$(echo "$lon" | xargs)
           ;;
         e*)
+          choose_or_create_subfolder
           read -rp "Enter coordinates like (48.1234, 11.5678): " coords
           coords_clean=$(echo "$coords" | tr -d '()')
           IFS=',' read -r lat lon <<< "$coords_clean"
@@ -198,13 +206,22 @@ while true; do
               ;;
           esac
           ;;
+        u*)
+          if [ -z "$CURRENT_LOCATION" ]; then
+            echo "No previous location available."
+            exit 1
+          fi
+          IFS=',' read -r lat lon <<< "$(echo "$CURRENT_LOCATION" | tr -d '()')"
+          ;;
         *)
           echo "Invalid mode selected."
           exit 1
           ;;
       esac
 
+      CURRENT_LOCATION="($lat, $lon)"
       echo "Coordinates: $lat, $lon"
+      echo "(Saved as CURRENT_LOCATION)"
       read -rp "Do you really want to spoof this location? (y/n): " confirm
       if [ "$confirm" = "y" ]; then
         echo "Starting locsim with coordinates: $lat, $lon"
@@ -222,7 +239,6 @@ while true; do
       ;;
   esac
 
-  # Ask if the user wants to continue or exit
   read -rp "Do you want to perform another action? (y/n): " continue_choice
   if [[ "$continue_choice" != "y" && "$continue_choice" != "Y" ]]; then
     echo "Exiting."
