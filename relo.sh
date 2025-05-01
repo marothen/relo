@@ -1,8 +1,6 @@
 #!/bin/bash
 
 BASE_DIR="./locations"
-CURRENT_LOCATION=""
-
 mkdir -p "$BASE_DIR"
 
 choose_or_create_subfolder() {
@@ -77,8 +75,8 @@ delete_subfolder_or_file() {
       done
       read -rp "Choose a file number to delete: " file_choice
 
-      if ! [[ "$file_choice" =~ ^[0-9]+$ ]] || [ "$file_choice" -lt 1 ] || [ "$file_choice" -gt "$count" ]; then
-        echo "Invalid file selection."
+      if ! [[ "$file_choice" =~ ^[0-9]+$ ]] || [ "$file_choice" -lt 1 ] || [ "$file_choice" -gt "${#files[@]}" ]; then
+        echo "Invalid selection."
         exit 1
       fi
 
@@ -98,6 +96,9 @@ delete_subfolder_or_file() {
   esac
 }
 
+# To store the current location
+current_location=""
+
 while true; do
   echo "What would you like to do?"
   echo "s) Spoof location"
@@ -106,20 +107,27 @@ while true; do
 
   case "$main_choice" in
     s*)
-      echo ""
-      echo "Choose mode:"
-      echo "c) Choose coordinates from a file"
-      echo "e) Enter coordinates manually"
-      if [ -n "$CURRENT_LOCATION" ]; then
-        echo "u) Use last spoofed location ($CURRENT_LOCATION)"
-        read -rp "Enter mode (c, e or u): " mode
-      else
+      # Ask if the current location is set and should be used
+      if [ -z "$current_location" ]; then
+        echo "Current location is not set."
+        echo "Choose mode:"
+        echo "c) Choose coordinates from a file"
+        echo "e) Enter coordinates manually"
         read -rp "Enter mode (c or e): " mode
+      else
+        echo "Current location: $current_location"
+        echo "Choose mode:"
+        echo "c) Choose coordinates from a file"
+        echo "e) Enter coordinates manually"
+        echo "u) Use current location"
+        read -rp "Enter mode (c, e, or u): " mode
       fi
 
       case "$mode" in
         c*)
+          # Select or create a subfolder before choosing a file
           choose_or_create_subfolder
+
           echo ""
           echo "Files in subfolder:"
           shopt -s nullglob
@@ -152,66 +160,19 @@ while true; do
           IFS=',' read -r lat lon <<< "$clean_line"
           lat=$(echo "$lat" | xargs)
           lon=$(echo "$lon" | xargs)
+          current_location="($lat, $lon)"
           ;;
         e*)
-          choose_or_create_subfolder
           read -rp "Enter coordinates like (48.1234, 11.5678): " coords
           coords_clean=$(echo "$coords" | tr -d '()')
           IFS=',' read -r lat lon <<< "$coords_clean"
           lat=$(echo "$lat" | xargs)
           lon=$(echo "$lon" | xargs)
-
-          echo ""
-          echo "Where would you like to save the coordinates?"
-          echo "c) Create new file"
-          echo "a) Add to existing file"
-          echo "d) Dont save"
-          read -rp "Enter choice (c,a or d): " save_choice
-
-          case "$save_choice" in
-            c*)
-              read -rp "Enter new filename (without path): " newfile
-              filepath="$SUBFOLDER/$newfile"
-              if [ -e "$filepath" ]; then
-                echo "Error: File already exists."
-                exit 1
-              fi
-              echo "($lat, $lon)" > "$filepath"
-              echo "Coordinates saved to $filepath"
-              ;;
-            a*)
-              echo "Available files in subfolder:"
-              shopt -s nullglob
-              files=("$SUBFOLDER"/*)
-              shopt -u nullglob
-              for i in "${!files[@]}"; do
-                filename=$(basename "${files[$i]}")
-                echo "$((i+1))) $filename"
-              done
-              read -rp "Choose a file number to append to: " fileappend
-              if ! [[ "$fileappend" =~ ^[0-9]+$ ]] || [ "$fileappend" -lt 1 ] || [ "$fileappend" -gt "${#files[@]}" ]; then
-                echo "Invalid file selection."
-                exit 1
-              fi
-              appendfile="${files[$((fileappend-1))]}"
-              echo "($lat, $lon)" >> "$appendfile"
-              echo "Appended to $(basename "$appendfile")"
-              ;;
-            d*)
-              echo "Coordinates not saved."
-              ;;
-            *)
-              echo "Invalid selection."
-              exit 1
-              ;;
-          esac
+          current_location="($lat, $lon)"
           ;;
         u*)
-          if [ -z "$CURRENT_LOCATION" ]; then
-            echo "No previous location available."
-            exit 1
-          fi
-          IFS=',' read -r lat lon <<< "$(echo "$CURRENT_LOCATION" | tr -d '()')"
+          # Use the current_location, already set
+          IFS=',' read -r lat lon <<< "${current_location//[()]/}"
           ;;
         *)
           echo "Invalid mode selected."
@@ -219,9 +180,33 @@ while true; do
           ;;
       esac
 
-      CURRENT_LOCATION="($lat, $lon)"
       echo "Coordinates: $lat, $lon"
-      echo "(Saved as CURRENT_LOCATION)"
+
+      # Ask if user wants to move the location randomly
+      read -rp "Do you want to move the spoofing location randomly? (y/n): " move_choice
+      if [[ "$move_choice" =~ ^[yY]$ ]]; then
+        read -rp "Enter distance to move in meters (positive number): " move_meters
+
+        # Check if move_meters is a valid positive integer
+        if ! [[ "$move_meters" =~ ^[0-9]+$ ]] || [ "$move_meters" -le 0 ]; then
+          echo "Invalid distance input. Must be a positive number."
+          continue
+        fi
+
+        # Generate random angle in radians (0 to 2π)
+        angle=$(awk -v seed=$RANDOM 'BEGIN { srand(seed); print rand() * 2 * 3.14159265359 }')
+
+        # Approximate calculation for lat/lon offset using random angle
+        delta_lat=$(awk -v d="$move_meters" -v a="$angle" 'BEGIN { print (d * cos(a)) / 111320 }')
+        delta_lon=$(awk -v d="$move_meters" -v a="$angle" -v lat="$lat" 'BEGIN { print (d * sin(a)) / (111320 * cos(lat * 3.14159265359 / 180)) }')
+
+        # Update lat/lon with calculated delta
+        lat=$(awk -v l="$lat" -v d="$delta_lat" 'BEGIN { print l + d }')
+        lon=$(awk -v l="$lon" -v d="$delta_lon" 'BEGIN { print l + d }')
+
+        echo "New randomized coordinates: $lat, $lon"
+      fi
+
       read -rp "Do you really want to spoof this location? (y/n): " confirm
       if [ "$confirm" = "y" ]; then
         echo "Starting locsim with coordinates: $lat, $lon"
@@ -239,6 +224,7 @@ while true; do
       ;;
   esac
 
+  # Ask if the user wants to continue or exit
   read -rp "Do you want to perform another action? (y/n): " continue_choice
   if [[ "$continue_choice" != "y" && "$continue_choice" != "Y" ]]; then
     echo "Exiting."
