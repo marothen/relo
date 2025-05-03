@@ -1,43 +1,49 @@
 #!/bin/sh
 
+LOGGING=0
+[ "$1" = "--log" ] && LOGGING=1
+
+log() {
+  [ "$LOGGING" -eq 1 ] && echo "$@"
+}
+
 # Function to safely call locsim
 safe_locsim_start() {
   if ! command -v locsim >/dev/null 2>&1; then
-    echo "Error: 'locsim' is not installed or not in your PATH."
+    echo "Warning: 'locsim' is not installed or not in your PATH." >&2
     return 1
   fi
-
   locsim start "$@"
 }
 
-# Function to compute haversine distance in meters
+# Haversine distance function in awk (no bc, radians inside awk)
 haversine_distance() {
-  lat1="$1"
-  lon1="$2"
-  lat2="$3"
-  lon2="$4"
-  R="$5"
-  
-  pi="3.141592653589793"
-  
-  # Calculate change in latitude and longitude
-  dlat=$(echo "$lat2 - $lat1" | awk '{print $1}')
-  dlon=$(echo "$lon2 - $lon1" | awk '{print $1}')
-  
-  # Convert to radians
-  dlat_rad=$(echo "$dlat * $pi / 180" | awk '{print $1}')
-  dlon_rad=$(echo "$dlon * $pi / 180" | awk '{print $1}')
-  
-  # Haversine formula (simplified for compatibility)
-  a=$(echo "s($dlat_rad / 2)^2 + c($lat1 * $pi / 180) * c($lat2 * $pi / 180) * s($dlon_rad / 2)^2" | awk '{print $1}')
-  c=$(echo "2 * a( sqrt($a), sqrt(1 - $a) )" | awk '{print $1}')
-  distance=$(echo "$R * $c" | awk '{print $1}')
-  
-  echo $distance
+  awk -v lat1="$1" -v lon1="$2" -v lat2="$3" -v lon2="$4" '
+  function to_rad(x) { return x * 3.141592653589793 / 180 }
+  BEGIN {
+    R = 6371000
+    dlat = to_rad(lat2 - lat1)
+    dlon = to_rad(lon2 - lon1)
+    lat1 = to_rad(lat1)
+    lat2 = to_rad(lat2)
+    a = sin(dlat / 2)^2 + cos(lat1) * cos(lat2) * sin(dlon / 2)^2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+    print R * c
+  }'
 }
 
-# Get the list of subdirectories under ./rou
-echo "Choose a subdirectory under './rou':"
+# Interpolates a point between (lat1, lon1) and (lat2, lon2) at given ratio (0..1)
+interpolate_point() {
+  awk -v lat1="$1" -v lon1="$2" -v lat2="$3" -v lon2="$4" -v ratio="$5" '
+  BEGIN {
+    lat = lat1 + (lat2 - lat1) * ratio
+    lon = lon1 + (lon2 - lon1) * ratio
+    printf "%.6f %.6f", lat, lon
+  }'
+}
+
+# Step 1: Select subdirectory
+log "Choose a subdirectory under './rou':"
 subdirs=$(find ./rou -mindepth 1 -maxdepth 1 -type d)
 i=1
 for dir in $subdirs; do
@@ -48,8 +54,8 @@ done
 read -rp "Enter the number corresponding to the subdirectory: " subdir_index
 subdir=$(echo "$subdirs" | sed -n "${subdir_index}p")
 
-# Get the list of GPX files in the chosen subdirectory
-echo "Choose a GPX file in '$subdir':"
+# Step 2: Select GPX file
+log "Choose a GPX file in '$subdir':"
 gpx_files=$(find "$subdir" -type f -name "*.gpx")
 i=1
 for file in $gpx_files; do
@@ -60,77 +66,96 @@ done
 read -rp "Enter the number corresponding to the GPX file: " gpx_file_index
 gpx_file=$(echo "$gpx_files" | sed -n "${gpx_file_index}p")
 
-# Get speed from user
-read -rp "Enter the speed in km/h: " SPEED_KMH
+# Step 3: Get speed
+read -rp "Enter speed in km/h: " SPEED_KMH
+SPEED=$(expr "$SPEED_KMH" \* 1000 / 3600)
 
-# Ask the user whether they want the interval in minutes or seconds
+# Step 4: Interval in minutes or seconds
 echo "Choose the interval unit:"
 echo "1) Minutes"
 echo "2) Seconds"
 read -rp "Enter 1 for minutes or 2 for seconds: " interval_choice
-
-# Get the interval based on user choice
 if [ "$interval_choice" -eq 1 ]; then
   read -rp "Enter wait interval in minutes: " TRIGGER_INTERVAL
-  TRIGGER_INTERVAL_SECONDS=$((TRIGGER_INTERVAL * 60))
+  INTERVAL_SECONDS=$((TRIGGER_INTERVAL * 60))
 elif [ "$interval_choice" -eq 2 ]; then
-  read -rp "Enter wait interval in seconds: " TRIGGER_INTERVAL_SECONDS
+  read -rp "Enter wait interval in seconds: " INTERVAL_SECONDS
 else
-  echo "Invalid choice. Exiting."
+  echo "Invalid choice." >&2
   exit 1
 fi
 
-# Derived values (using integer arithmetic)
-SPEED=$(($SPEED_KMH * 1000 / 3600))  # Convert speed to meters per second
-EARTH_RADIUS=6371000  # meters
-
-# Extract coordinates from the chosen GPX file
+# Step 5: Parse coordinates
 coords=$(awk -F'"' '/<trkpt / { print $2, $4 }' "$gpx_file")
-
 if [ -z "$coords" ]; then
-  echo "No coordinates found in GPX file. Check the file format." >&2
+  echo "No coordinates found in GPX file. Exiting." >&2
   exit 1
 fi
 
-# Initialization
-prev_lat=""
-prev_lon=""
-simulated_time=0
-time_since_last_trigger=0
+# Load into array
+IFS='
+'
+coord_array=($coords)
+unset IFS
+num_points=${#coord_array[@]}
 
-echo "Starting route simulation"
-echo "→ Speed: ${SPEED_KMH} km/h"
-echo "→ Trigger interval: every ${TRIGGER_INTERVAL} $([ "$interval_choice" -eq 1 ] && echo "minute(s)" || echo "second(s)") of simulated movement"
+# Initialize simulation
+curr_index=0
+read lat lon <<EOF
+${coord_array[$curr_index]}
+EOF
+curr_lat="$lat"
+curr_lon="$lon"
 
-# Loop over the coordinates in the GPX file
-echo "$coords" | while read -r lat lon; do
-  if [ -n "$prev_lat" ]; then
-    dist=$(haversine_distance "$prev_lat" "$prev_lon" "$lat" "$lon" "$EARTH_RADIUS")
-    step_time=$((dist / SPEED))  # Calculate step time in seconds (integer division)
-    simulated_time=$((simulated_time + step_time))  # Add step time to the total simulated time
-    time_since_last_trigger=$((time_since_last_trigger + step_time))  # Increment time since last trigger
+log "Starting simulation at $curr_lat $curr_lon"
+safe_locsim_start "$curr_lat" "$curr_lon"
+echo "Sleeping for $INTERVAL_SECONDS seconds before starting the simulation."
+sleep "$INTERVAL_SECONDS"
 
-    # Trigger locsim if enough time has passed
-    if [ "$time_since_last_trigger" -ge "$TRIGGER_INTERVAL_SECONDS" ]; then
-      echo "Triggering locsim at simulated time $simulated_time s → $lat $lon"
-      safe_locsim_start "$lat" "$lon"
-      sleep "$TRIGGER_INTERVAL_SECONDS"
-      time_since_last_trigger=0
+while [ "$curr_index" -lt $((num_points - 1)) ]; do
+  distance_needed=$((SPEED * INTERVAL_SECONDS))
+  segment_start_lat="$curr_lat"
+  segment_start_lon="$curr_lon"
+
+  # Traverse until we find the segment we're landing in
+  while [ "$curr_index" -lt $((num_points - 1)) ]; do
+    read next_lat next_lon <<EOF
+${coord_array[$((curr_index + 1))]}
+EOF
+
+    segment_distance=$(haversine_distance "$segment_start_lat" "$segment_start_lon" "$next_lat" "$next_lon")
+    segment_distance_int=$(printf "%.0f" "$segment_distance")
+
+    if [ "$distance_needed" -le "$segment_distance_int" ]; then
+      # Interpolate and break
+      ratio=$(awk -v d="$distance_needed" -v sd="$segment_distance" 'BEGIN { printf "%.8f", d / sd }')
+      read landing_lat landing_lon <<EOF
+$(interpolate_point "$segment_start_lat" "$segment_start_lon" "$next_lat" "$next_lon" "$ratio")
+EOF
+      log "Triggering locsim at $landing_lat $landing_lon"
+      safe_locsim_start "$landing_lat" "$landing_lon"
+      sleep "$INTERVAL_SECONDS"
+      curr_lat="$landing_lat"
+      curr_lon="$landing_lon"
+      break
+    else
+      distance_needed=$((distance_needed - segment_distance_int))
+      segment_start_lat="$next_lat"
+      segment_start_lon="$next_lon"
+      curr_index=$((curr_index + 1))
     fi
-  else
-    echo "Setting initial location: $lat $lon"
-    safe_locsim_start "$lat" "$lon"
-    sleep "$TRIGGER_INTERVAL_SECONDS"
-  fi
+  done
 
-  prev_lat="$lat"
-  prev_lon="$lon"
+  if [ "$curr_index" -ge $((num_points - 1)) ]; then
+    final_lat="$segment_start_lat"
+    final_lon="$segment_start_lon"
+    last_distance=$(haversine_distance "$curr_lat" "$curr_lon" "$final_lat" "$final_lon")
+    last_seconds=$(awk -v d="$last_distance" -v s="$SPEED" 'BEGIN { printf "%.0f", d / s }')
+    log "Final leg: sleeping $last_seconds seconds, then triggering final point $final_lat $final_lon"
+    sleep "$last_seconds"
+    safe_locsim_start "$final_lat" "$final_lon"
+    break
+  fi
 done
 
-# Make sure the last location is triggered
-if [ -n "$prev_lat" ] && [ -n "$prev_lon" ]; then
-  echo "Triggering locsim for the last location: $prev_lat $prev_lon"
-  safe_locsim_start "$prev_lat" "$prev_lon"
-fi
-
-echo "Simulation complete. Destination reached."
+log "Simulation complete."
