@@ -12,15 +12,28 @@ safe_locsim_start() {
 
 # Function to compute haversine distance in meters
 haversine_distance() {
-  awk -v lat1="$1" -v lon1="$2" -v lat2="$3" -v lon2="$4" -v R="$EARTH_RADIUS" '
-  BEGIN {
-    pi = 3.141592653589793
-    dlat = (lat2 - lat1) * pi / 180
-    dlon = (lon2 - lon1) * pi / 180
-    a = sin(dlat/2)^2 + cos(lat1 * pi / 180) * cos(lat2 * pi / 180) * sin(dlon/2)^2
-    c = 2 * atan2(sqrt(a), sqrt(1-a))
-    print R * c
-  }'
+  lat1="$1"
+  lon1="$2"
+  lat2="$3"
+  lon2="$4"
+  R="$5"
+  
+  pi="3.141592653589793"
+  
+  # Calculate change in latitude and longitude
+  dlat=$(echo "$lat2 - $lat1" | awk '{print $1}')
+  dlon=$(echo "$lon2 - $lon1" | awk '{print $1}')
+  
+  # Convert to radians
+  dlat_rad=$(echo "$dlat * $pi / 180" | awk '{print $1}')
+  dlon_rad=$(echo "$dlon * $pi / 180" | awk '{print $1}')
+  
+  # Haversine formula (simplified for compatibility)
+  a=$(echo "s($dlat_rad / 2)^2 + c($lat1 * $pi / 180) * c($lat2 * $pi / 180) * s($dlon_rad / 2)^2" | awk '{print $1}')
+  c=$(echo "2 * a( sqrt($a), sqrt(1 - $a) )" | awk '{print $1}')
+  distance=$(echo "$R * $c" | awk '{print $1}')
+  
+  echo $distance
 }
 
 # Get the list of subdirectories under ./rou
@@ -59,7 +72,7 @@ read -p "Enter 1 for minutes or 2 for seconds: " interval_choice
 # Get the interval based on user choice
 if [ "$interval_choice" -eq 1 ]; then
   read -p "Enter the interval between locsim triggers in minutes: " TRIGGER_INTERVAL
-  TRIGGER_INTERVAL_SECONDS=$(awk -v m="$TRIGGER_INTERVAL" 'BEGIN { print m * 60 }')
+  TRIGGER_INTERVAL_SECONDS=$((TRIGGER_INTERVAL * 60))
 elif [ "$interval_choice" -eq 2 ]; then
   read -p "Enter the interval between locsim triggers in seconds: " TRIGGER_INTERVAL_SECONDS
 else
@@ -67,8 +80,8 @@ else
   exit 1
 fi
 
-# Derived values
-SPEED=$(awk -v k="$SPEED_KMH" 'BEGIN { print k * 1000 / 3600 }')  # m/s
+# Derived values (using integer arithmetic)
+SPEED=$(($SPEED_KMH * 1000 / 3600))  # Convert speed to meters per second
 EARTH_RADIUS=6371000  # meters
 
 # Extract coordinates from the chosen GPX file
@@ -92,13 +105,14 @@ echo "→ Trigger interval: every ${TRIGGER_INTERVAL} $([ "$interval_choice" -eq
 # Loop over the coordinates in the GPX file
 echo "$coords" | while read -r lat lon; do
   if [ -n "$prev_lat" ]; then
-    dist=$(haversine_distance "$prev_lat" "$prev_lon" "$lat" "$lon")
-    step_time=$(awk -v d="$dist" -v s="$SPEED" 'BEGIN { print d / s }')
-    simulated_time=$(awk -v a="$simulated_time" -v b="$step_time" 'BEGIN { print a + b }')
-    time_since_last_trigger=$(awk -v a="$time_since_last_trigger" -v b="$step_time" 'BEGIN { print a + b }')
+    dist=$(haversine_distance "$prev_lat" "$prev_lon" "$lat" "$lon" "$EARTH_RADIUS")
+    step_time=$((dist / SPEED))  # Calculate step time in seconds (integer division)
+    simulated_time=$((simulated_time + step_time))  # Add step time to the total simulated time
+    time_since_last_trigger=$((time_since_last_trigger + step_time))  # Increment time since last trigger
 
-    if awk -v a="$time_since_last_trigger" -v b="$TRIGGER_INTERVAL_SECONDS" 'BEGIN { exit !(a >= b) }'; then
-      echo "[🚀] Triggering locsim at simulated time $(awk -v t="$simulated_time" 'BEGIN { printf "%.0f", t }')s → $lat $lon"
+    # Trigger locsim if enough time has passed
+    if [ "$time_since_last_trigger" -ge "$TRIGGER_INTERVAL_SECONDS" ]; then
+      echo "[🚀] Triggering locsim at simulated time $simulated_time s → $lat $lon"
       safe_locsim_start "$lat" "$lon"
       sleep "$TRIGGER_INTERVAL_SECONDS"
       time_since_last_trigger=0
