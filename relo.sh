@@ -225,11 +225,11 @@ while true; do
       if [ -n "$move_meters" ]; then
         angle=$(awk -v seed=$RANDOM 'BEGIN { srand(seed); print rand() * 2 * 3.14159265359 }')
 
-        delta_lat=$(awk -v d="$move_meters" -v a="$angle" 'BEGIN { print (d * cos(a)) / 111320 }')
-        delta_lon=$(awk -v d="$move_meters" -v a="$angle" -v lat="$lat" 'BEGIN { print (d * sin(a)) / (111320 * cos(lat * 3.14159265359 / 180)) }')
+        delta_lat=$(awk -v d="$move_meters" -v a="$angle" 'BEGIN { printf "%.10f", (d * cos(a)) / 111320 }')
+        delta_lon=$(awk -v d="$move_meters" -v a="$angle" -v lat="$lat" 'BEGIN { printf "%.10f", (d * sin(a)) / (111320 * cos(lat * 3.14159265359 / 180)) }')
 
-        lat=$(awk -v l="$lat" -v d="$delta_lat" 'BEGIN { print l + d }')
-        lon=$(awk -v l="$lon" -v d="$delta_lon" 'BEGIN { print l + d }')
+        lat=$(awk -v l="$lat" -v d="$delta_lat" 'BEGIN { printf "%.10f", l + d }')
+        lon=$(awk -v l="$lon" -v d="$delta_lon" 'BEGIN { printf "%.10f", l + d }')
 
         echo "New randomized coordinates: $lat, $lon"
       fi
