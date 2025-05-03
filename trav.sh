@@ -71,10 +71,10 @@ read -rp "Enter 1 for minutes or 2 for seconds: " interval_choice
 
 # Get the interval based on user choice
 if [ "$interval_choice" -eq 1 ]; then
-  read -rp "Enter the interval between locsim triggers in minutes: " TRIGGER_INTERVAL
+  read -rp "Enter wait interval in minutes: " TRIGGER_INTERVAL
   TRIGGER_INTERVAL_SECONDS=$((TRIGGER_INTERVAL * 60))
 elif [ "$interval_choice" -eq 2 ]; then
-  read -rp "Enter the interval between locsim triggers in seconds: " TRIGGER_INTERVAL_SECONDS
+  read -rp "Enter wait interval in seconds: " TRIGGER_INTERVAL_SECONDS
 else
   echo "Invalid choice. Exiting."
   exit 1
