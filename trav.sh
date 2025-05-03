@@ -45,7 +45,7 @@ for dir in $subdirs; do
   i=$((i + 1))
 done
 
-read -p "Enter the number corresponding to the subdirectory: " subdir_index
+read -rp "Enter the number corresponding to the subdirectory: " subdir_index
 subdir=$(echo "$subdirs" | sed -n "${subdir_index}p")
 
 # Get the list of GPX files in the chosen subdirectory
@@ -57,24 +57,24 @@ for file in $gpx_files; do
   i=$((i + 1))
 done
 
-read -p "Enter the number corresponding to the GPX file: " gpx_file_index
+read -rp "Enter the number corresponding to the GPX file: " gpx_file_index
 gpx_file=$(echo "$gpx_files" | sed -n "${gpx_file_index}p")
 
 # Get speed from user
-read -p "Enter the speed in km/h: " SPEED_KMH
+read -rp "Enter the speed in km/h: " SPEED_KMH
 
 # Ask the user whether they want the interval in minutes or seconds
 echo "⏱️ Choose the interval unit:"
 echo "1) Minutes"
 echo "2) Seconds"
-read -p "Enter 1 for minutes or 2 for seconds: " interval_choice
+read -rp "Enter 1 for minutes or 2 for seconds: " interval_choice
 
 # Get the interval based on user choice
 if [ "$interval_choice" -eq 1 ]; then
-  read -p "Enter the interval between locsim triggers in minutes: " TRIGGER_INTERVAL
+  read -rp "Enter the interval between locsim triggers in minutes: " TRIGGER_INTERVAL
   TRIGGER_INTERVAL_SECONDS=$((TRIGGER_INTERVAL * 60))
 elif [ "$interval_choice" -eq 2 ]; then
-  read -p "Enter the interval between locsim triggers in seconds: " TRIGGER_INTERVAL_SECONDS
+  read -rp "Enter the interval between locsim triggers in seconds: " TRIGGER_INTERVAL_SECONDS
 else
   echo "Invalid choice. Exiting."
   exit 1
