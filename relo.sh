@@ -213,7 +213,7 @@ while true; do
       if [ -z "$move_choice" ]; then
         read -rp "Do you want to move the spoofing location randomly? (y/n): " move_choice
         if [[ "$move_choice" =~ ^[yY]$ ]]; then
-            read -rp "Enter distance to move in meters (positive number): " move_meters
+            read -rp "Enter distance to move may meters (positive number): " move_meters
 
             if ! [[ "$move_meters" =~ ^[0-9]+$ ]] || [ "$move_meters" -le 0 ]; then
             echo "Invalid distance input. Must be a positive number."
@@ -225,8 +225,12 @@ while true; do
       if [ -n "$move_meters" ]; then
         angle=$(awk -v seed=$RANDOM 'BEGIN { srand(seed); print rand() * 2 * 3.14159265359 }')
 
-        delta_lat=$(awk -v d="$move_meters" -v a="$angle" 'BEGIN { printf "%.10f", (d * cos(a)) / 111320 }')
-        delta_lon=$(awk -v d="$move_meters" -v a="$angle" -v lat="$lat" 'BEGIN { printf "%.10f", (d * sin(a)) / (111320 * cos(lat * 3.14159265359 / 180)) }')
+        random_move_meters=$(od -An -N2 -tu2 < /dev/urandom | awk -v max="$move_meters" '{print $1 % (max + 1)}')
+
+        echo "Random move distance: $random_move_meters meters"
+
+        delta_lat=$(awk -v d="$random_move_meters" -v a="$angle" 'BEGIN { printf "%.10f", (d * cos(a)) / 111320 }')
+        delta_lon=$(awk -v d="$random_move_meters" -v a="$angle" -v lat="$lat" 'BEGIN { printf "%.10f", (d * sin(a)) / (111320 * cos(lat * 3.14159265359 / 180)) }')
 
         lat=$(awk -v l="$lat" -v d="$delta_lat" 'BEGIN { printf "%.10f", l + d }')
         lon=$(awk -v l="$lon" -v d="$delta_lon" 'BEGIN { printf "%.10f", l + d }')
