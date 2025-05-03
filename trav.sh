@@ -37,7 +37,7 @@ haversine_distance() {
 }
 
 # Get the list of subdirectories under ./rou
-echo "📂 Choose a subdirectory under './rou':"
+echo "Choose a subdirectory under './rou':"
 subdirs=$(find ./rou -mindepth 1 -maxdepth 1 -type d)
 i=1
 for dir in $subdirs; do
@@ -49,7 +49,7 @@ read -rp "Enter the number corresponding to the subdirectory: " subdir_index
 subdir=$(echo "$subdirs" | sed -n "${subdir_index}p")
 
 # Get the list of GPX files in the chosen subdirectory
-echo "📂 Choose a GPX file in '$subdir':"
+echo "Choose a GPX file in '$subdir':"
 gpx_files=$(find "$subdir" -type f -name "*.gpx")
 i=1
 for file in $gpx_files; do
@@ -64,7 +64,7 @@ gpx_file=$(echo "$gpx_files" | sed -n "${gpx_file_index}p")
 read -rp "Enter the speed in km/h: " SPEED_KMH
 
 # Ask the user whether they want the interval in minutes or seconds
-echo "⏱️ Choose the interval unit:"
+echo "Choose the interval unit:"
 echo "1) Minutes"
 echo "2) Seconds"
 read -rp "Enter 1 for minutes or 2 for seconds: " interval_choice
@@ -88,7 +88,7 @@ EARTH_RADIUS=6371000  # meters
 coords=$(awk -F'"' '/<trkpt / { print $2, $4 }' "$gpx_file")
 
 if [ -z "$coords" ]; then
-  echo "❌ No coordinates found in GPX file. Check the file format." >&2
+  echo "No coordinates found in GPX file. Check the file format." >&2
   exit 1
 fi
 
@@ -98,7 +98,7 @@ prev_lon=""
 simulated_time=0
 time_since_last_trigger=0
 
-echo "📍 Starting route simulation"
+echo "Starting route simulation"
 echo "→ Speed: ${SPEED_KMH} km/h"
 echo "→ Trigger interval: every ${TRIGGER_INTERVAL} $([ "$interval_choice" -eq 1 ] && echo "minute(s)" || echo "second(s)") of simulated movement"
 
@@ -112,13 +112,13 @@ echo "$coords" | while read -r lat lon; do
 
     # Trigger locsim if enough time has passed
     if [ "$time_since_last_trigger" -ge "$TRIGGER_INTERVAL_SECONDS" ]; then
-      echo "[🚀] Triggering locsim at simulated time $simulated_time s → $lat $lon"
+      echo "Triggering locsim at simulated time $simulated_time s → $lat $lon"
       safe_locsim_start "$lat" "$lon"
       sleep "$TRIGGER_INTERVAL_SECONDS"
       time_since_last_trigger=0
     fi
   else
-    echo "[▶️] Setting initial location: $lat $lon"
+    echo "Setting initial location: $lat $lon"
     safe_locsim_start "$lat" "$lon"
     sleep "$TRIGGER_INTERVAL_SECONDS"
   fi
@@ -129,8 +129,8 @@ done
 
 # Make sure the last location is triggered
 if [ -n "$prev_lat" ] && [ -n "$prev_lon" ]; then
-  echo "[🚀] Triggering locsim for the last location: $prev_lat $prev_lon"
+  echo "Triggering locsim for the last location: $prev_lat $prev_lon"
   safe_locsim_start "$prev_lat" "$prev_lon"
 fi
 
-echo "✅ Simulation complete. Destination reached."
+echo "Simulation complete. Destination reached."
