@@ -25,27 +25,31 @@ haversine_distance() {
 
 # Get the list of subdirectories under ./rou
 echo "📂 Choose a subdirectory under './rou':"
-subdirs=($(find ./rou -mindepth 1 -maxdepth 1 -type d))
-select subdir in "${subdirs[@]}"; do
-  if [ -n "$subdir" ]; then
-    echo "You chose: $subdir"
-    break
-  else
-    echo "Invalid choice. Please select a valid number."
-  fi
+subdirs=$(find ./rou -mindepth 1 -maxdepth 1 -type d)
+subdir_list=()
+i=1
+for dir in $subdirs; do
+  echo "$i) $dir"
+  subdir_list[$i]="$dir"
+  i=$((i + 1))
 done
+
+read -p "Enter the number corresponding to the subdirectory: " subdir_index
+subdir="${subdir_list[$subdir_index]}"
 
 # Get the list of GPX files in the chosen subdirectory
 echo "📂 Choose a GPX file in '$subdir':"
-gpx_files=($(find "$subdir" -type f -name "*.gpx"))
-select gpx_file in "${gpx_files[@]}"; do
-  if [ -n "$gpx_file" ]; then
-    echo "You chose: $gpx_file"
-    break
-  else
-    echo "Invalid choice. Please select a valid number."
-  fi
+gpx_files=$(find "$subdir" -type f -name "*.gpx")
+gpx_file_list=()
+i=1
+for file in $gpx_files; do
+  echo "$i) $file"
+  gpx_file_list[$i]="$file"
+  i=$((i + 1))
 done
+
+read -p "Enter the number corresponding to the GPX file: " gpx_file_index
+gpx_file="${gpx_file_list[$gpx_file_index]}"
 
 # Get speed from user
 read -p "Enter the speed in km/h: " SPEED_KMH
