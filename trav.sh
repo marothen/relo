@@ -132,7 +132,7 @@ log "Interval: $INTERVAL_SECONDS seconds"
 log "Starting simulation at $curr_lat $curr_lon"
 safe_locsim_start "$curr_lat" "$curr_lon"
 echo "Sleeping for $INTERVAL_SECONDS seconds before starting the simulation."
-#sleep "$INTERVAL_SECONDS"
+sleep "$INTERVAL_SECONDS"
 
 while [ "$curr_index" -lt $((num_points - 1)) ]; do
   start=$(date +%s)
@@ -150,7 +150,7 @@ while [ "$curr_index" -lt $((num_points - 1)) ]; do
     log "Next point: $next_lat $next_lon"
 
     #segment_distance=$(haversine_distance "$segment_start_lat" "$segment_start_lon" "$next_lat" "$next_lon")
-    segment_distance=$(./haversine.py "$segment_start_lat" "$segment_start_lon" "$next_lat" "$next_lon")
+    segment_distance=$(python ./haversine.py "$segment_start_lat" "$segment_start_lon" "$next_lat" "$next_lon")
 
     segment_distance_int=$(printf "%.0f" "$segment_distance")
     log "Segment distance: $segment_distance"
@@ -175,7 +175,7 @@ while [ "$curr_index" -lt $((num_points - 1)) ]; do
       else
         current_interval_seconds=$((current_interval_seconds - elapsed))
       fi
-      #sleep "$current_interval_seconds"
+      sleep "$current_interval_seconds"
       curr_lat="$landing_lat"
       curr_lon="$landing_lon"
       break
