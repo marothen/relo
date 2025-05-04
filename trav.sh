@@ -42,10 +42,10 @@ interpolate_point() {
 }
 
 
-subdir="./rou/long"
-gpx_file="./rou/long/muc_elc.gpx"
-INTERVAL_SECONDS=600
-SPEED_KMH=90
+#subdir="./rou/long"
+#gpx_file="./rou/long/muc_elc.gpx"
+#INTERVAL_SECONDS=600
+#SPEED_KMH=90
 
 
 if [ -z "$gpx_file" ]; then
@@ -180,7 +180,6 @@ while [ "$curr_index" -lt $((num_points - 1)) ]; do
       curr_lon="$landing_lon"
       break
     else
-      echo "NOT FOUND"
       distance_needed=$((distance_needed - segment_distance_int))
       segment_start_lat="$next_lat"
       segment_start_lon="$next_lon"
