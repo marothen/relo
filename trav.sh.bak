@@ -41,13 +41,10 @@ interpolate_point() {
   }'
 }
 
-
 subdir="./rou/long"
-gpx_file="./rou/long/muc_elc.gpx"
-INTERVAL_SECONDS=600
-SPEED_KMH=90
-
-
+gpx_file="./rou/long/elc_muc_ext.gpx"
+INTERVAL_SECONDS=30
+SPEED_KMH=180
 if [ -z "$gpx_file" ]; then
     # Step 1: Select subdirectory
     log "Choose a subdirectory under './rou':"
@@ -149,9 +146,7 @@ while [ "$curr_index" -lt $((num_points - 1)) ]; do
     log "Next line: $next_line"
     log "Next point: $next_lat $next_lon"
 
-    #segment_distance=$(haversine_distance "$segment_start_lat" "$segment_start_lon" "$next_lat" "$next_lon")
-    segment_distance=$(./haversine.py "$segment_start_lat" "$segment_start_lon" "$next_lat" "$next_lon")
-
+    segment_distance=$(haversine_distance "$segment_start_lat" "$segment_start_lon" "$next_lat" "$next_lon")
     segment_distance_int=$(printf "%.0f" "$segment_distance")
     log "Segment distance: $segment_distance"
     log "Segment distance int: $segment_distance_int meters"

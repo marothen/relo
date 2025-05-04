@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "bashdb",
+        "request": "launch",
+        "name": "Debug Shell Script (No Sudo)",
+        "program": "${workspaceFolder}/trav.sh",
+        "args": [],
+        "env": {},
+        "cwd": "${workspaceFolder}",
+        "bashdbPath": "${env:HOME}/bash-debug/install/bin/bashdb"
+      }
+    ]
+  }
+  
