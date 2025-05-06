@@ -43,8 +43,8 @@ interpolate_point() {
 
 
 #subdir="./rou/long"
-#gpx_file="./rou/long/muc_elc.gpx"
-#INTERVAL_SECONDS=600
+#gpx_file="./rou/long/elc_muc.gpx"
+#INTERVAL_SECONDS=10
 #SPEED_KMH=90
 
 
@@ -110,7 +110,7 @@ if [ -z "$INTERVAL_SECONDS" ]; then
 fi
 
 # Step 5: Parse coordinates
-coords=$(awk -F'"' '/<trkpt / { print $2, $4 }' "$gpx_file")
+coords=$(awk -F'"' '/<trkpt / { print $2, $4, $6}' "$gpx_file")
 if [ -z "$coords" ]; then
   echo "No coordinates found in GPX file. Exiting." >&2
   exit 1
@@ -146,11 +146,12 @@ while [ "$curr_index" -lt $((num_points - 1)) ]; do
     next_line=$(sed -n "$((curr_index + 1))p" "$coord_tmp")
     next_lat=$(echo "$next_line" | awk '{print $1}')
     next_lon=$(echo "$next_line" | awk '{print $2}')
+    next_wait=$(echo "$next_line" | awk '{print $3}')
     log "Next line: $next_line"
     log "Next point: $next_lat $next_lon"
 
     #segment_distance=$(haversine_distance "$segment_start_lat" "$segment_start_lon" "$next_lat" "$next_lon")
-    segment_distance=$(python ./haversine.py "$segment_start_lat" "$segment_start_lon" "$next_lat" "$next_lon")
+    segment_distance=$(python3 ./haversine.py "$segment_start_lat" "$segment_start_lon" "$next_lat" "$next_lon")
 
     segment_distance_int=$(printf "%.0f" "$segment_distance")
     log "Segment distance: $segment_distance"
@@ -161,9 +162,9 @@ while [ "$curr_index" -lt $((num_points - 1)) ]; do
       landing_point=$(interpolate_point "$segment_start_lat" "$segment_start_lon" "$next_lat" "$next_lon" "$ratio")
       landing_lat=$(echo "$landing_point" | awk '{print $1}')
       landing_lon=$(echo "$landing_point" | awk '{print $2}')
-      echo "segment $segment_start_lat $segment_start_lon"
-      echo "landing $landing_lat $landing_lon"
-      echo "current $curr_lat $curr_lon"
+      log "segment $segment_start_lat $segment_start_lon"
+      log "landing $landing_lat $landing_lon"
+      log "current $curr_lat $curr_lon"
 
       log "Triggering locsim at $landing_lat $landing_lon"
       safe_locsim_start "$landing_lat" "$landing_lon"
@@ -180,10 +181,22 @@ while [ "$curr_index" -lt $((num_points - 1)) ]; do
       curr_lon="$landing_lon"
       break
     else
-      distance_needed=$((distance_needed - segment_distance_int))
-      segment_start_lat="$next_lat"
-      segment_start_lon="$next_lon"
-      curr_index=$((curr_index + 1))
+      if [ -n "$next_wait" ]; then
+        echo "Triggering locsim at $next_lat $next_lon for pause"
+        safe_locsim_start "$next_lat" "$next_lon"
+        echo "Sleeping for $next_wait seconds at $next_lat $next_lon for pause"
+        end=$(date +%s)
+        sleep "$next_wait"
+        distance_needed=$((SPEED * INTERVAL_SECONDS))
+        segment_start_lat="$next_lat"
+        segment_start_lon="$next_lon"
+        curr_index=$((curr_index + 1))
+      else
+        distance_needed=$((distance_needed - segment_distance_int))
+        segment_start_lat="$next_lat"
+        segment_start_lon="$next_lon"
+        curr_index=$((curr_index + 1))
+      fi
     fi
   done
 
