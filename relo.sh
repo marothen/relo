@@ -225,18 +225,19 @@ while true; do
       if [ -n "$move_meters" ]; then
         angle=$(awk -v seed=$RANDOM 'BEGIN { srand(seed); print rand() * 2 * 3.14159265359 }')
 
-        random_move_meters=$(od -An -N2 -tu2 < /dev/urandom | awk -v max="$move_meters" '{print $1 % (max + 1)}')
+        # Get a random radius from 0 up to move_meters (not inside area, but on border of a random-radius circle)
+        random_radius=$(od -An -N2 -tu2 < /dev/urandom | awk -v max="$move_meters" '{print $1 % (max + 1)}')
+        echo "Random radius: $random_radius meters"
 
-        echo "Random move distance: $random_move_meters meters"
-
-        delta_lat=$(awk -v d="$random_move_meters" -v a="$angle" 'BEGIN { printf "%.10f", (d * cos(a)) / 111320 }')
-        delta_lon=$(awk -v d="$random_move_meters" -v a="$angle" -v lat="$lat" 'BEGIN { printf "%.10f", (d * sin(a)) / (111320 * cos(lat * 3.14159265359 / 180)) }')
+        delta_lat=$(awk -v d="$random_radius" -v a="$angle" 'BEGIN { printf "%.10f", (d * cos(a)) / 111320 }')
+        delta_lon=$(awk -v d="$random_radius" -v a="$angle" -v lat="$lat" 'BEGIN { printf "%.10f", (d * sin(a)) / (111320 * cos(lat * 3.14159265359 / 180)) }')
 
         lat=$(awk -v l="$lat" -v d="$delta_lat" 'BEGIN { printf "%.10f", l + d }')
         lon=$(awk -v l="$lon" -v d="$delta_lon" 'BEGIN { printf "%.10f", l + d }')
 
         echo "New randomized coordinates: $lat, $lon"
       fi
+
 
       
       if [ -z "$confirm" ]; then

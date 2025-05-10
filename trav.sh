@@ -41,11 +41,52 @@ interpolate_point() {
   }'
 }
 
-
-#subdir="./rou/long"
-#gpx_file="./rou/long/elc_muc.gpx"
+#subdir="./rou/short"
+#gpx_file="./rou/short/kirchberg/Wanderung14KM.gpx"
 #INTERVAL_SECONDS=10
-#SPEED_KMH=90
+#SPEED_KMH=7
+#START_LAT="48.357818"
+#START_LON="8.730149"
+LOGGING=0
+
+# Parse arguments
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --lat)
+      START_LAT="$2"
+      shift 2
+      ;;
+    --lon)
+      START_LON="$2"
+      shift 2
+      ;;
+    --log)
+      LOGGING=1
+      shift
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
+# Validate presence of both or none
+if { [ -n "$START_LAT" ] && [ -z "$START_LON" ]; } || \
+   { [ -z "$START_LAT" ] && [ -n "$START_LON" ]; }; then
+  echo "Error: Both --lat and --lon must be provided together." >&2
+  exit 1
+fi
+
+# Validate numeric format
+if [ -n "$START_LAT" ] && [ -n "$START_LON" ]; then
+  if ! echo "$START_LAT" | grep -Eq '^-?[0-9]+(\.[0-9]+)?$' || \
+     ! echo "$START_LON" | grep -Eq '^-?[0-9]+(\.[0-9]+)?$'; then
+    echo "Error: Invalid format for --lat or --lon. Must be decimal numbers." >&2
+    exit 1
+  fi
+fi
+
 
 
 if [ -z "$gpx_file" ]; then
@@ -121,9 +162,59 @@ coord_tmp=$(mktemp)
 echo "$coords" > "$coord_tmp"
 
 num_points=$(wc -l < "$coord_tmp")
-curr_index=1
-curr_lat=$(sed -n "1p" "$coord_tmp" | awk '{print $1}')
-curr_lon=$(sed -n "1p" "$coord_tmp" | awk '{print $2}')
+
+# Step 5: Parse coordinates
+coords=$(awk -F'"' '/<trkpt / { print $2, $4, $6}' "$gpx_file")
+if [ -z "$coords" ]; then
+  echo "No coordinates found in GPX file. Exiting." >&2
+  exit 1
+fi
+
+# Load into array
+coord_tmp=$(mktemp)
+echo "$coords" > "$coord_tmp"
+
+num_points=$(wc -l < "$coord_tmp")
+
+# Optional: Start from given lat/lon
+if [ -n "$START_LAT" ] || [ -n "$START_LON" ]; then
+  if ! echo "$START_LAT" | grep -Eq '^[-+]?[0-9]+(\.[0-9]+)?$' || ! echo "$START_LON" | grep -Eq '^[-+]?[0-9]+(\.[0-9]+)?$'; then
+    echo "Error: Both --startlat and --startlon must be valid floating point numbers." >&2
+    exit 1
+  fi
+
+  min_distance=999999999
+  prev_distance=999999999
+  increasing_count=0
+  found_index=""
+  for i in $(seq 1 $num_points); do
+    line=$(sed -n "${i}p" "$coord_tmp")
+    lat=$(echo "$line" | awk '{print $1}')
+    lon=$(echo "$line" | awk '{print $2}')
+    distance=$(python3 ./haversine.py "$START_LAT" "$START_LON" "$lat" "$lon")
+    distance_int=$(printf "%.0f" "$distance")
+
+    if [ "$distance_int" -gt "$prev_distance" ]; then
+      found_index="$i"
+      break
+    fi
+    prev_distance="$distance_int"
+  done
+
+  if [ -z "$found_index" ]; then
+    echo "Error: Could not determine a start location close to the given coordinates." >&2
+    exit 1
+  fi
+
+  curr_index=$((found_index - 1))
+  curr_lat=$(sed -n "${found_index}p" "$coord_tmp" | awk '{print $1}')
+  curr_lon=$(sed -n "${found_index}p" "$coord_tmp" | awk '{print $2}')
+else
+  curr_index=1
+  curr_lat=$(sed -n "1p" "$coord_tmp" | awk '{print $1}')
+  curr_lon=$(sed -n "1p" "$coord_tmp" | awk '{print $2}')
+fi
+
 
 
 log "SPEED: $SPEED m/s"

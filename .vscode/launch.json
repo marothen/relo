@@ -4,8 +4,18 @@
       {
         "type": "bashdb",
         "request": "launch",
-        "name": "Debug Shell Script (No Sudo)",
+        "name": "Trav",
         "program": "${workspaceFolder}/trav.sh",
+        "args": [],
+        "env": {},
+        "cwd": "${workspaceFolder}",
+        "bashdbPath": "${env:HOME}/bash-debug/install/bin/bashdb"
+      },
+      {
+        "type": "bashdb",
+        "request": "launch",
+        "name": "Relo",
+        "program": "${workspaceFolder}/relo.sh",
         "args": [],
         "env": {},
         "cwd": "${workspaceFolder}",
@@ -13,4 +23,3 @@
       }
     ]
   }
-  
