@@ -1,19 +1,24 @@
 #!/bin/sh
 
+# Get optional positional arguments
 START_LAT="$1"
 START_LON="$2"
 
-# Validate presence of both lat and lon
-if [ -z "$START_LAT" ] || [ -z "$START_LON" ]; then
-  echo "Usage: $0 <latitude> <longitude>"
+# Validate correct usage of positional parameters
+if { [ -n "$START_LAT" ] && [ -z "$START_LON" ]; } || \
+   { [ -z "$START_LAT" ] && [ -n "$START_LON" ]; }; then
+  echo "Error: Either provide both latitude and longitude, or neither."
+  echo "Usage: $0 [<latitude> <longitude>]"
   exit 1
 fi
 
-# Validate numeric format
-if ! echo "$START_LAT" | grep -Eq '^-?[0-9]+(\.[0-9]+)?$' || \
-   ! echo "$START_LON" | grep -Eq '^-?[0-9]+(\.[0-9]+)?$'; then
-  echo "Error: Invalid format for latitude or longitude. Must be decimal numbers."
-  exit 1
+# Validate numeric format if both are given
+if [ -n "$START_LAT" ] && [ -n "$START_LON" ]; then
+  if ! echo "$START_LAT" | grep -Eq '^-?[0-9]+(\.[0-9]+)?$' || \
+     ! echo "$START_LON" | grep -Eq '^-?[0-9]+(\.[0-9]+)?$'; then
+    echo "Error: Invalid format for latitude or longitude. Must be decimal numbers."
+    exit 1
+  fi
 fi
 
 # Function to safely call locsim
@@ -25,7 +30,6 @@ safe_locsim_start() {
   locsim start "$@"
 }
 
-# Haversine distance function
 haversine_distance() {
   awk -v lat1="$1" -v lon1="$2" -v lat2="$3" -v lon2="$4" '
   function to_rad(x) { return x * 3.141592653589793 / 180 }
@@ -51,84 +55,66 @@ interpolate_point() {
 }
 
 if [ -z "$gpx_file" ]; then
-    # Step 1: Select subdirectory
-    echo "Choose a subdirectory under './rou':"
-    subdir_tmp=$(mktemp)
-    find ./rou -mindepth 1 -maxdepth 1 -type d > "$subdir_tmp"
-
-    i=1
-    while IFS= read -r dir; do
+  subdir_tmp=$(mktemp)
+  find ./rou -mindepth 1 -maxdepth 1 -type d > "$subdir_tmp"
+  i=1
+  while IFS= read -r dir; do
     echo "$i) $dir"
     i=$((i + 1))
-    done < "$subdir_tmp"
+  done < "$subdir_tmp"
+  printf "Enter the number corresponding to the subdirectory: "
+  read -r subdir_index
+  subdir=$(sed -n "${subdir_index}p" "$subdir_tmp")
+  rm -f "$subdir_tmp"
 
-    printf "Enter the number corresponding to the subdirectory: "
-    read -r subdir_index
-    subdir=$(sed -n "${subdir_index}p" "$subdir_tmp")
-    rm -f "$subdir_tmp"
-
-    # Step 2: Select GPX file
-    echo "Choose a GPX file in '$subdir':"
-    gpx_tmp=$(mktemp)
-    find "$subdir" -type f -name "*.gpx" > "$gpx_tmp"
-
-    i=1
-    while IFS= read -r file; do
+  gpx_tmp=$(mktemp)
+  find "$subdir" -type f -name "*.gpx" > "$gpx_tmp"
+  i=1
+  while IFS= read -r file; do
     echo "$i) $file"
     i=$((i + 1))
-    done < "$gpx_tmp"
+  done < "$gpx_tmp"
+  printf "Enter the number corresponding to the GPX file: "
+  read -r gpx_file_index
+  gpx_file=$(sed -n "${gpx_file_index}p" "$gpx_tmp")
+  rm -f "$gpx_tmp"
 
-    printf "Enter the number corresponding to the GPX file: "
-    read -r gpx_file_index
-    gpx_file=$(sed -n "${gpx_file_index}p" "$gpx_tmp")
-    rm -f "$gpx_tmp"
-
-    # Step 3: Get speed
-    printf "Enter speed in km/h: "
-    read -r SPEED_KMH
+  printf "Enter speed in km/h: "
+  read -r SPEED_KMH
 fi
+
 SPEED=$(expr "$SPEED_KMH" \* 1000 / 3600)
 
 if [ -z "$INTERVAL_SECONDS" ]; then
-    # Step 4: Interval
-    echo "Choose the interval unit:"
-    echo "1) Minutes"
-    echo "2) Seconds"
-    printf "Enter 1 for minutes or 2 for seconds: "
-    read -r interval_choice
-    if [ "$interval_choice" -eq 1 ]; then
-        printf "Enter wait interval in minutes: "
-        read -r TRIGGER_INTERVAL
-        INTERVAL_SECONDS=$((TRIGGER_INTERVAL * 60))
-    elif [ "$interval_choice" -eq 2 ]; then
-        printf "Enter wait interval in seconds: "
-        read -r INTERVAL_SECONDS
-    else
-        echo "Invalid choice." >&2
-        exit 1
-    fi
+  echo "Choose the interval unit:"
+  echo "1) Minutes"
+  echo "2) Seconds"
+  printf "Enter 1 for minutes or 2 for seconds: "
+  read -r interval_choice
+  if [ "$interval_choice" -eq 1 ]; then
+    printf "Enter wait interval in minutes: "
+    read -r TRIGGER_INTERVAL
+    INTERVAL_SECONDS=$((TRIGGER_INTERVAL * 60))
+  elif [ "$interval_choice" -eq 2 ]; then
+    printf "Enter wait interval in seconds: "
+    read -r INTERVAL_SECONDS
+  else
+    echo "Invalid choice." >&2
+    exit 1
+  fi
 fi
 
-# Step 5: Parse coordinates
 coords=$(awk -F'"' '/<trkpt / { print $2, $4, $6}' "$gpx_file")
 if [ -z "$coords" ]; then
   echo "No coordinates found in GPX file. Exiting." >&2
   exit 1
 fi
 
-# Load into array
 coord_tmp=$(mktemp)
 echo "$coords" > "$coord_tmp"
-
 num_points=$(wc -l < "$coord_tmp")
 
-# Optional: Start from given lat/lon
-if [ -n "$START_LAT" ] || [ -n "$START_LON" ]; then
-  if ! echo "$START_LAT" | grep -Eq '^[-+]?[0-9]+(\.[0-9]+)?$' || ! echo "$START_LON" | grep -Eq '^[-+]?[0-9]+(\.[0-9]+)?$'; then
-    echo "Error: Both latitude and longitude must be valid floating point numbers." >&2
-    exit 1
-  fi
-
+if [ -n "$START_LAT" ] && [ -n "$START_LON" ]; then
   min_distance=999999999
   prev_distance=999999999
   found_index=""
@@ -138,19 +124,16 @@ if [ -n "$START_LAT" ] || [ -n "$START_LON" ]; then
     lon=$(echo "$line" | awk '{print $2}')
     distance=$(python3 ./haversine.py "$START_LAT" "$START_LON" "$lat" "$lon")
     distance_int=$(printf "%.0f" "$distance")
-
     if [ "$distance_int" -gt "$prev_distance" ]; then
       found_index="$i"
       break
     fi
     prev_distance="$distance_int"
   done
-
   if [ -z "$found_index" ]; then
     echo "Error: Could not determine a start location close to the given coordinates." >&2
     exit 1
   fi
-
   curr_index=$((found_index - 1))
   curr_lat=$(sed -n "${found_index}p" "$coord_tmp" | awk '{print $1}')
   curr_lon=$(sed -n "${found_index}p" "$coord_tmp" | awk '{print $2}')
@@ -176,7 +159,6 @@ while [ "$curr_index" -lt $((num_points - 1)) ]; do
     next_lat=$(echo "$next_line" | awk '{print $1}')
     next_lon=$(echo "$next_line" | awk '{print $2}')
     next_wait=$(echo "$next_line" | awk '{print $3}')
-
     segment_distance=$(python3 ./haversine.py "$segment_start_lat" "$segment_start_lon" "$next_lat" "$next_lon")
     segment_distance_int=$(printf "%.0f" "$segment_distance")
 
@@ -199,10 +181,7 @@ while [ "$curr_index" -lt $((num_points - 1)) ]; do
       break
     else
       if [ -n "$next_wait" ]; then
-        echo "Triggering locsim at $next_lat $next_lon for pause"
         safe_locsim_start "$next_lat" "$next_lon"
-        echo "Sleeping for $next_wait seconds at $next_lat $next_lon for pause"
-        end=$(date +%s)
         sleep "$next_wait"
         distance_needed=$((SPEED * INTERVAL_SECONDS))
         segment_start_lat="$next_lat"
