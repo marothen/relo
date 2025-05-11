@@ -1,14 +1,14 @@
 #!/bin/sh
 
 # Get optional positional arguments
-#START_LAT="$1"
-#START_LON="$2"
+START_LAT="$1"
+START_LON="$2"
 
-START_LAT="48.349401"
-START_LON="8.720411"
-gpx_file="./rou/short/kirchberg/Wanderung2_14KM.gpx"
-SPEED_KMH="10"
-INTERVAL_SECONDS="10"
+#START_LAT="48.349401"
+#START_LON="8.720411"
+#gpx_file="./rou/short/kirchberg/Wanderung2_14KM.gpx"
+#SPEED_KMH="10"
+#INTERVAL_SECONDS="10"
 
 # Validate correct usage of positional parameters
 if { [ -n "$START_LAT" ] && [ -z "$START_LON" ]; } || \
@@ -121,6 +121,7 @@ echo "$coords" > "$coord_tmp"
 num_points=$(wc -l < "$coord_tmp")
 
 if [ -n "$START_LAT" ] && [ -n "$START_LON" ]; then
+  echo "Finding the closest point to the given coordinates..."
   min_distance=999999999
   found_index=""
 
@@ -141,7 +142,7 @@ if [ -n "$START_LAT" ] && [ -n "$START_LON" ]; then
     echo "Error: Could not determine a start location close to the given coordinates." >&2
     exit 1
   fi
-
+  echo "Closest point found at index $found_index with distance $min_distance meters."
   curr_index=$found_index
   curr_lat=$(sed -n "${curr_index}p" "$coord_tmp" | awk '{print $1}')
   curr_lon=$(sed -n "${curr_index}p" "$coord_tmp" | awk '{print $2}')
