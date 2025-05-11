@@ -1,8 +1,14 @@
 #!/bin/sh
 
 # Get optional positional arguments
-START_LAT="$1"
-START_LON="$2"
+#START_LAT="$1"
+#START_LON="$2"
+
+START_LAT="48.349401"
+START_LON="8.720411"
+gpx_file="./rou/short/kirchberg/Wanderung2_14KM.gpx"
+SPEED_KMH="10"
+INTERVAL_SECONDS="10"
 
 # Validate correct usage of positional parameters
 if { [ -n "$START_LAT" ] && [ -z "$START_LON" ]; } || \
@@ -116,32 +122,35 @@ num_points=$(wc -l < "$coord_tmp")
 
 if [ -n "$START_LAT" ] && [ -n "$START_LON" ]; then
   min_distance=999999999
-  prev_distance=999999999
   found_index=""
+
   for i in $(seq 1 $num_points); do
     line=$(sed -n "${i}p" "$coord_tmp")
     lat=$(echo "$line" | awk '{print $1}')
     lon=$(echo "$line" | awk '{print $2}')
     distance=$(python3 ./haversine.py "$START_LAT" "$START_LON" "$lat" "$lon")
     distance_int=$(printf "%.0f" "$distance")
-    if [ "$distance_int" -gt "$prev_distance" ]; then
+
+    if [ "$distance_int" -lt "$min_distance" ]; then
+      min_distance="$distance_int"
       found_index="$i"
-      break
     fi
-    prev_distance="$distance_int"
   done
+
   if [ -z "$found_index" ]; then
     echo "Error: Could not determine a start location close to the given coordinates." >&2
     exit 1
   fi
-  curr_index=$((found_index - 1))
-  curr_lat=$(sed -n "${found_index}p" "$coord_tmp" | awk '{print $1}')
-  curr_lon=$(sed -n "${found_index}p" "$coord_tmp" | awk '{print $2}')
+
+  curr_index=$found_index
+  curr_lat=$(sed -n "${curr_index}p" "$coord_tmp" | awk '{print $1}')
+  curr_lon=$(sed -n "${curr_index}p" "$coord_tmp" | awk '{print $2}')
 else
   curr_index=1
   curr_lat=$(sed -n "1p" "$coord_tmp" | awk '{print $1}')
   curr_lon=$(sed -n "1p" "$coord_tmp" | awk '{print $2}')
 fi
+
 
 safe_locsim_start "$curr_lat" "$curr_lon"
 echo "Sleeping for $INTERVAL_SECONDS seconds before starting the simulation."
