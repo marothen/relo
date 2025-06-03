@@ -133,7 +133,10 @@ if [[ $is_batch == true ]]; then
   fi
 
   # move_meters kann leer sein, ist optional
-  run_spoof_cycle
+  while true; do
+    run_spoof_cycle
+    sleep "$((auto_wait_time * 60))"
+  done
   exit 0
 fi
 
