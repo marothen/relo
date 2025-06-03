@@ -11,7 +11,7 @@ mkdir -p "$LAUNCH_AGENTS"
 
 echo "[*] Kopiere Skript und Konfigurationsdateien..."
 cp "$SRC_DIR/autorelo.sh" "$TARGET_DIR/"
-cp "$SRC_DIR/config/"*.conf "$TARGET_DIR/config/"
+cp "$SRC_DIR/config/"*.conf "$TARGET_DIR/conf/"
 chmod +x "$TARGET_DIR/autorelo.sh"
 
 echo "[*] Installiere .plist-Dateien aus plist/..."
