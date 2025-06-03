@@ -9,7 +9,7 @@
     <key>ProgramArguments</key>
     <array>
       <string>/var/mobile/relo/autorelo.sh</string>
-      <string>./conf/cognizant.conf</string>
+      <string>/var/mobile/relo/conf/cognizant.conf</string>
     </array>
 
     <key>StartInterval</key>
