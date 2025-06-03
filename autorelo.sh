@@ -6,17 +6,18 @@ mkdir -p "$BASE_DIR"
 # Flag ob im Batch-Modus (Config) gelaufen wird
 is_batch=false
 
-# --- Config laden, falls angegeben ---
-if [[ "$1" == "--config" ]]; then
-  if [[ -f "$2" ]]; then
-    source "$2"
-    is_batch=true
-    # Ausgaben unterdrücken im Batch-Modus
-    exec 1>/dev/null 2>&1
-  else
-    echo "Error: Config file '$2' not found."
+if [[ -f "$1" ]]; then
+  source "$1"
+  if [[ -z "$execution_mode" ]]; then
+    echo "Error: 'execution_mode' not set in config." >&2
     exit 1
   fi
+  is_batch=true
+  # Ausgaben unterdrücken im Batch-Modus
+  exec 1>/dev/null 2>&1
+elif [[ -n "$1" ]]; then
+  echo "Error: Config file '$1' not found." >&2
+  exit 1
 fi
 
 safe_locsim_start() {

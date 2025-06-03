@@ -26,7 +26,7 @@
         "request": "launch",
         "name": "Autorelo",
         "program": "${workspaceFolder}/autorelo.sh",
-        "args": ["--config", "./conf/cognizant.conf"],
+        "args": ["./conf/cognizant.conf"],
         "env": {},
         "cwd": "${workspaceFolder}",
         "bashdbPath": "${env:HOME}/bash-debug/install/bin/bashdb"
