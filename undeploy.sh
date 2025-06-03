@@ -10,9 +10,9 @@ mkdir -p "$TARGET_DIR/config"
 mkdir -p "$LAUNCH_AGENTS"
 
 echo "[*] Kopiere Skript und Konfigurationsdateien..."
-cp "$SRC_DIR/spoof.sh" "$TARGET_DIR/"
+cp "$SRC_DIR/autorelo.sh" "$TARGET_DIR/"
 cp "$SRC_DIR/config/"*.conf "$TARGET_DIR/config/"
-chmod +x "$TARGET_DIR/spoof.sh"
+chmod +x "$TARGET_DIR/autorelo.sh"
 
 echo "[*] Installiere .plist-Dateien aus plist/..."
 for plist_file in "$SRC_DIR/plist/"*.plist; do
