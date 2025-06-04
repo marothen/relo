@@ -1,15 +1,23 @@
 #!/bin/sh
 
-if [ -z "$1" ]; then
-  echo "Usage: $0 <plist_name_without_extension>"
-  exit 1
+PID_FILE="/tmp/runpid.pid"
+
+# Check if PID file exists
+if [ ! -f "$PID_FILE" ]; then
+  echo "No PID file found. Nothing to stop."
+  exit 0
 fi
 
-PLIST_NAME="$1"
-PLIST_PATH="/var/mobile/Library/LaunchAgents/${PLIST_NAME}.plist"
+PID=$(cat "$PID_FILE")
 
-# Unload and delete
-launchctl bootout gui/501 "$PLIST_PATH"
-rm -f "$PLIST_PATH"
+# Kill the process if it’s still running
+if kill -0 "$PID" 2>/dev/null; then
+  echo "Stopping process with PID $PID..."
+  kill "$PID"
+else
+  echo "No running process with PID $PID."
+fi
 
-echo "$PLIST_NAME undeployed and removed."
+# Remove the PID file
+rm -f "$PID_FILE"
+echo "Stopped and cleaned up."

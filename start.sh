@@ -1,26 +1,38 @@
 #!/bin/sh
 
-if [ -z "$1" ]; then
-  echo "Usage: $0 <plist_name_without_extension>"
+# Check for argument
+if [ $# -ne 1 ]; then
+  echo "Usage: $0 <config_basename_without_extension>"
   exit 1
 fi
 
-PLIST_NAME="$1"
-SOURCE_PLIST="./plist/${PLIST_NAME}.plist"
-TARGET_PLIST="/var/mobile/Library/LaunchAgents/${PLIST_NAME}.plist"
+CONFIG_BASENAME="$1"
+CONFIG_PATH="./conf/${CONFIG_BASENAME}.conf"
+PID_FILE="/tmp/runpid.pid"
+SCRIPT="./autorelo.sh"
 
-# Ensure LaunchAgents directory exists
-mkdir -p /var/mobile/Library/LaunchAgents
-
-# Check if source plist exists
-if [ ! -f "$SOURCE_PLIST" ]; then
-  echo "Error: $SOURCE_PLIST not found."
+# Check if config file exists
+if [ ! -f "$CONFIG_PATH" ]; then
+  echo "Error: Config file '$CONFIG_PATH' not found."
   exit 1
 fi
 
-# Copy and load plist
-cp "$SOURCE_PLIST" "$TARGET_PLIST"
-launchctl bootstrap gui/501 "$TARGET_PLIST"
-launchctl kickstart -kp gui/501/"$PLIST_NAME"
+# Stop existing process if PID file exists and process is alive
+if [ -f "$PID_FILE" ]; then
+  OLD_PID=$(cat "$PID_FILE")
+  if kill -0 "$OLD_PID" 2>/dev/null; then
+    echo "Stopping existing process with PID $OLD_PID..."
+    kill "$OLD_PID"
+  fi
+  rm -f "$PID_FILE"
+fi
 
-echo "$PLIST_NAME deployed and started."
+# Start new process in background and disown it
+echo "Starting new process with config '$CONFIG_PATH'..."
+sh "$SCRIPT" "$CONFIG_PATH" &
+NEW_PID=$!
+disown
+
+# Save new PID
+echo "$NEW_PID" > "$PID_FILE"
+echo "New process started with PID $NEW_PID."
