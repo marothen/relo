@@ -109,18 +109,19 @@ if [[ $is_batch == true ]]; then
       exit 1
     fi
 
-    # file_index aus Config (1-basiert) erwartet
-    if [[ -z "$file_index" ]]; then
-      echo "Error: 'file_index' not defined in config."
-      exit 1
+   # file_name aus Config erwartet
+    if [[ -z "$file_name" ]]; then
+    echo "Error: 'file_name' not defined in config."
+    exit 1
     fi
 
-    if ! [[ "$file_index" =~ ^[0-9]+$ ]] || [ "$file_index" -lt 1 ] || [ "$file_index" -gt "${#files[@]}" ]; then
-      echo "Error: Invalid file_index '$file_index' in config."
-      exit 1
+    selected_file="$SUBFOLDER/$file_name"
+    if [[ ! -f "$selected_file" ]]; then
+    echo "Error: File '$file_name' not found in subfolder '$SUBFOLDER'."
+    exit 1
     fi
 
-    selected_file="${files[$((file_index-1))]}"
+
   elif [[ "$execution_mode" == "manual" ]]; then
     # current_location wird erwartet als "(lat, lon)"
     if [[ -z "$current_location" ]]; then
