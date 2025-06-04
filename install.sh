@@ -11,7 +11,7 @@ rm -rf "$TARGET_DIR"
 
 # --- 3. Clone the Git repository and branch ---
 echo "Cloning branch '$BRANCH_NAME' from '$REPO_URL'..."
-git clone --branch "$BRANCH_NAME" "$REPO_URL" "$TARGET_DIR"
+git clone --branch "$BRANCH_NAME" "$REPO_URL"
 
 # --- 4. Make all .sh and .py files in the target folder executable ---
 echo "Making .sh and .py files executable..."
