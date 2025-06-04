@@ -3,15 +3,34 @@
 BASE_DIR="./locations"
 mkdir -p "$BASE_DIR"
 
+# Flag ob im Batch-Modus (Config) gelaufen wird
+is_batch=false
+
+if [[ -f "$1" ]]; then
+  source "$1"
+  if [[ -z "$execution_mode" ]]; then
+    echo "Error: 'execution_mode' not set in config." >&2
+    exit 1
+  fi
+  is_batch=true
+  # Ausgaben unterdrücken im Batch-Modus
+  exec 1>/dev/null 2>&1
+elif [[ -n "$1" ]]; then
+  echo "Error: Config file '$1' not found." >&2
+  exit 1
+fi
+
 safe_locsim_start() {
   if ! command -v locsim >/dev/null 2>&1; then
-    echo "Error: 'locsim' is not installed or not in your PATH."
+    [[ $is_batch == false ]] && echo "Error: 'locsim' is not installed or not in your PATH."
     return 1
   fi
   locsim start "$@"
 }
 
 choose_or_create_subfolder() {
+  [[ $is_batch == true ]] && return 0  # keine Eingabe im Batch-Modus
+
   echo ""
   echo "Available subfolders:"
   subfolders=($(find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d -exec basename {} \;))
@@ -24,12 +43,12 @@ choose_or_create_subfolder() {
     read -rp "Enter name for new subfolder: " newfolder
     SUBFOLDER="$BASE_DIR/$newfolder"
     mkdir -p "$SUBFOLDER"
-    echo "Created and using subfolder: $newfolder"
+    [[ $is_batch == false ]] && echo "Created and using subfolder: $newfolder"
   elif [[ "$subchoice" =~ ^[0-9]+$ ]] && [ "$subchoice" -le "${#subfolders[@]}" ] && [ "$subchoice" -ge 1 ]; then
     SUBFOLDER="$BASE_DIR/${subfolders[$((subchoice-1))]}"
-    echo "Using subfolder: ${subfolders[$((subchoice-1))]}"
+    [[ $is_batch == false ]] && echo "Using subfolder: ${subfolders[$((subchoice-1))]}"
   else
-    echo "Invalid selection."
+    [[ $is_batch == false ]] && echo "Invalid selection."
     exit 1
   fi
 }
@@ -44,28 +63,85 @@ select_random_location_from_file() {
 }
 
 run_spoof_cycle() {
-  if [ "$mode" = "c" ]; then
+  if [[ "$execution_mode" == "file" ]]; then
     select_random_location_from_file
   fi
   IFS=',' read -r lat lon <<< "${current_location//[()]/}"
-  echo "Coordinates: $lat, $lon"
+
+  [[ $is_batch == false ]] && echo "Coordinates: $lat, $lon"
 
   if [ -n "$move_meters" ]; then
     angle=$(awk -v seed=$RANDOM 'BEGIN { srand(seed); print rand() * 2 * 3.14159265359 }')
     random_radius=$(od -An -N2 -tu2 < /dev/urandom | awk -v max="$move_meters" '{print $1 % (max + 1)}')
-    echo "Random radius: $random_radius meters"
+    [[ $is_batch == false ]] && echo "Random radius: $random_radius meters"
     delta_lat=$(awk -v d="$random_radius" -v a="$angle" 'BEGIN { printf "%.10f", (d * cos(a)) / 111320 }')
     delta_lon=$(awk -v d="$random_radius" -v a="$angle" -v lat="$lat" 'BEGIN { printf "%.10f", (d * sin(a)) / (111320 * cos(lat * 3.14159265359 / 180)) }')
     lat=$(awk -v l="$lat" -v d="$delta_lat" 'BEGIN { printf "%.10f", l + d }')
     lon=$(awk -v l="$lon" -v d="$delta_lon" 'BEGIN { printf "%.10f", l + d }')
-    echo "New randomized coordinates: $lat, $lon"
+    [[ $is_batch == false ]] && echo "New randomized coordinates: $lat, $lon"
   fi
 
-  echo "Starting locsim with coordinates: $lat, $lon"
+  [[ $is_batch == false ]] && echo "Starting locsim with coordinates: $lat, $lon"
   safe_locsim_start "$lat" "$lon"
 }
 
 # --- Main logic starts here ---
+
+if [[ $is_batch == true ]]; then
+  # Batch-Modus: keine Eingaben, kein Loop, direkt einmal ausführen
+  if [[ $execution_mode == "file" ]]; then
+    # Subfolder in Config angegeben?
+    if [[ -z "$subfolder" ]]; then
+      echo "Error: 'subfolder' not defined in config."
+      exit 1
+    fi
+    SUBFOLDER="$BASE_DIR/$subfolder"
+    if [[ ! -d "$SUBFOLDER" ]]; then
+      echo "Error: Subfolder '$SUBFOLDER' does not exist."
+      exit 1
+    fi
+    shopt -s nullglob
+    files=("$SUBFOLDER"/*)
+    shopt -u nullglob
+
+    if [ "${#files[@]}" -eq 0 ]; then
+      echo "Error: No files found in $SUBFOLDER"
+      exit 1
+    fi
+
+   # file_name aus Config erwartet
+    if [[ -z "$file_name" ]]; then
+    echo "Error: 'file_name' not defined in config."
+    exit 1
+    fi
+
+    selected_file="$SUBFOLDER/$file_name"
+    if [[ ! -f "$selected_file" ]]; then
+    echo "Error: File '$file_name' not found in subfolder '$SUBFOLDER'."
+    exit 1
+    fi
+
+
+  elif [[ "$execution_mode" == "manual" ]]; then
+    # current_location wird erwartet als "(lat, lon)"
+    if [[ -z "$current_location" ]]; then
+      echo "Error: 'current_location' not defined in config."
+      exit 1
+    fi
+  else
+    echo "Error: Unknown execution_mode '$execution_mode' in config."
+    exit 1
+  fi
+
+  # move_meters kann leer sein, ist optional
+  while true; do
+    run_spoof_cycle
+    sleep "$((auto_wait_time * 60))"
+  done
+  exit 0
+fi
+
+# --- Interaktiver Modus ---
 
 while true; do
   echo "What would you like to do?"

@@ -1,0 +1,77 @@
+#!/bin/bash -i
+
+CONFIG_BASE_DIR="./conf"
+PID_FILE="/tmp/runpid.pid"
+SCRIPT="./autorelo.sh"
+
+# Prompt user to select config if none provided
+if [ $# -ne 1 ]; then
+  echo "No config basename given."
+  echo "Please select a config via subfolder and file:"
+  
+  # Step 1: Choose subfolder
+  echo "Available subfolders in '$CONFIG_BASE_DIR':"
+  subfolders=($(find "$CONFIG_BASE_DIR" -mindepth 1 -maxdepth 1 -type d -exec basename {} \;))
+  for i in "${!subfolders[@]}"; do
+    echo "$((i+1))) ${subfolders[$i]}"
+  done
+  read -rp "Select subfolder number: " sub_choice
+
+  if ! [[ "$sub_choice" =~ ^[0-9]+$ ]] || [ "$sub_choice" -lt 1 ] || [ "$sub_choice" -gt "${#subfolders[@]}" ]; then
+    echo "Invalid subfolder selection."
+    exit 1
+  fi
+
+  SELECTED_SUBFOLDER="${subfolders[$((sub_choice-1))]}"
+  FULL_SUBFOLDER_PATH="$CONFIG_BASE_DIR/$SELECTED_SUBFOLDER"
+
+  # Step 2: Choose file
+  echo "Available .conf files in '$FULL_SUBFOLDER_PATH':"
+  shopt -s nullglob
+  files=("$FULL_SUBFOLDER_PATH"/*.conf)
+  shopt -u nullglob
+
+  if [ "${#files[@]}" -eq 0 ]; then
+    echo "No .conf files found in $FULL_SUBFOLDER_PATH."
+    exit 1
+  fi
+
+  for i in "${!files[@]}"; do
+    echo "$((i+1))) $(basename "${files[$i]}")"
+  done
+  read -rp "Select file number: " file_choice
+
+  if ! [[ "$file_choice" =~ ^[0-9]+$ ]] || [ "$file_choice" -lt 1 ] || [ "$file_choice" -gt "${#files[@]}" ]; then
+    echo "Invalid file selection."
+    exit 1
+  fi
+
+  CONFIG_PATH="${files[$((file_choice-1))]}"
+else
+  CONFIG_PATH="./conf/${1}.conf"
+fi
+
+# Validate config path
+if [ ! -f "$CONFIG_PATH" ]; then
+  echo "Error: Config file '$CONFIG_PATH' not found."
+  exit 1
+fi
+
+# Stop existing process if running
+if [ -f "$PID_FILE" ]; then
+  OLD_PID=$(cat "$PID_FILE")
+  if kill -0 "$OLD_PID" 2>/dev/null; then
+    echo "Stopping existing process with PID $OLD_PID..."
+    kill "$OLD_PID"
+  fi
+  rm -f "$PID_FILE"
+fi
+
+# Start new process
+echo "Starting new process with config '$CONFIG_PATH'..."
+bash "$SCRIPT" "$CONFIG_PATH" &
+NEW_PID=$!
+disown
+
+echo "$NEW_PID" > "$PID_FILE"
+echo "New process started with PID $NEW_PID."

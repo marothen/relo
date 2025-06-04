@@ -1,0 +1,35 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "bashdb",
+        "request": "launch",
+        "name": "Trav",
+        "program": "${workspaceFolder}/trav.sh",
+        "args": [],
+        "env": {},
+        "cwd": "${workspaceFolder}",
+        "bashdbPath": "${env:HOME}/bash-debug/install/bin/bashdb"
+      },
+      {
+        "type": "bashdb",
+        "request": "launch",
+        "name": "Relo",
+        "program": "${workspaceFolder}/relo.sh",
+        "args": [],
+        "env": {},
+        "cwd": "${workspaceFolder}",
+        "bashdbPath": "${env:HOME}/bash-debug/install/bin/bashdb"
+      },
+      {
+        "type": "bashdb",
+        "request": "launch",
+        "name": "Autorelo",
+        "program": "${workspaceFolder}/autorelo.sh",
+        "args": ["./conf/cognizant.conf"],
+        "env": {},
+        "cwd": "${workspaceFolder}",
+        "bashdbPath": "${env:HOME}/bash-debug/install/bin/bashdb"
+      }
+    ]
+  }
