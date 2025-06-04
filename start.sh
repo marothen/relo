@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash -i
 
 # Check for argument
 if [ $# -ne 1 ]; then
