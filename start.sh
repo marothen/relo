@@ -29,7 +29,7 @@ fi
 
 # Start new process in background and disown it
 echo "Starting new process with config '$CONFIG_PATH'..."
-sh "$SCRIPT" "$CONFIG_PATH" &
+bash "$SCRIPT" "$CONFIG_PATH" &
 NEW_PID=$!
 disown
 
