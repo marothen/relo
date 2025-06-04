@@ -24,8 +24,8 @@
       {
         "type": "bashdb",
         "request": "launch",
-        "name": "Autorelo",
-        "program": "${workspaceFolder}/autorelo.sh",
+        "name": "Auto",
+        "program": "${workspaceFolder}/auto.sh",
         "args": ["./conf/test/slowtest.conf"],
         "env": {},
         "cwd": "${workspaceFolder}",
