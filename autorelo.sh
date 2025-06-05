@@ -1,104 +1,108 @@
 #!/bin/bash
 
-BASE_DIR="./locations"
-mkdir -p "$BASE_DIR"
 
-# Standardwerte
-is_batch=false
-debug_mode=false
 
-# Logging-Vorbereitung
-LOGFILE="/var/mobile/locsim_debug.log"
-log() {
-  [[ "$debug_mode" == true ]] && echo "$(date '+%F %T') | $*" >> "$LOGFILE"
+# Debug-Ausgabe-Funktion
+log_debug() {
+  local level="$1"
+  local message="$2"
+  case "$debug_mode" in
+    0) return ;;  # keine Ausgabe
+    1)
+      [[ "$level" == "run" || "$level" == "locsim" ]] || return
+      echo "$(date '+%Y-%m-%d %H:%M:%S') $message" >> "$BASE_DIR/debug.log"
+      ;;
+    2)
+      echo "$(date '+%Y-%m-%d %H:%M:%S') $message" >> "$BASE_DIR/debug.log"
+      ;;
+    3)
+      echo "$(date '+%Y-%m-%d %H:%M:%S') $message"
+      ;;
+  esac
 }
 
-# Config einlesen
-if [[ -f "$1" ]]; then
-  source "$1"
-  [[ "$debug_mode" == true ]] && exec >>"$LOGFILE" 2>&1
-  [[ -z "$execution_mode" ]] && echo "Error: 'execution_mode' not set in config." >&2 && exit 1
-  is_batch=true
-  exec 1>/dev/null 2>&1
-elif [[ -n "$1" ]]; then
-  echo "Error: Config file '$1' not found." >&2
+CONFIG_FILE="$1"
+echo Config-Datei: "$CONFIG_FILE"
+if [[ -z "$CONFIG_FILE" || ! -f "$CONFIG_FILE" ]]; then
+  log_debug "init" "Error: Config file must be provided and exist."
   exit 1
 fi
 
-# PATH erweitern
-export PATH="/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin:/opt/bin:$PATH"
+source "$CONFIG_FILE"
 
-safe_locsim_start() {
-  log "Trying to start locsim with arguments: $*"
-  if ! command -v locsim >/dev/null 2>&1; then
-    log "locsim not found in PATH: $PATH"
-    [[ $is_batch == false ]] && echo "Error: 'locsim' not in PATH"
-    return 1
-  fi
-  locsim start "$@"
-  log "locsim executed"
-}
+# Validierung der nötigen Variablen
+if [[ -z "$subfolder" || -z "$file_name" || -z "$auto_wait_time" ]]; then
+  log_debug "init" "Error: subfolder, file_name und auto_wait_time müssen gesetzt sein."
+  exit 1
+fi
+
+# Standardwerte
+check_interval_minutes=${check_interval_minutes:-1}
+debug_mode=${debug_mode:-0}
+BASE_DIR="./locations"
+SUBFOLDER="$BASE_DIR/$subfolder"
+selected_file="$SUBFOLDER/$file_name"
+auto_wait_seconds=$((auto_wait_time * 60))
+check_interval_seconds=$((check_interval_minutes * 60))
+
+# Datei prüfen
+if [[ ! -f "$selected_file" ]]; then
+  log_debug "init" "Error: Datei '$selected_file' nicht gefunden."
+  exit 1
+fi
 
 select_random_location_from_file() {
-  line=$(grep -Eo '\([^)]+\)' "$selected_file" | shuf -n 1)
+  local line=$(grep -Eo '\([^)]+\)' "$selected_file" | shuf -n 1)
   clean_line=$(echo "$line" | tr -d '()')
   IFS=',' read -r lat lon <<< "$clean_line"
   lat=$(echo "$lat" | xargs)
   lon=$(echo "$lon" | xargs)
   current_location="($lat, $lon)"
-  log "Selected location from file: $current_location"
+  log_debug "run" "Neue Zufallsposition: $current_location"
 }
 
-run_spoof_cycle() {
-  if [[ "$execution_mode" == "file" ]]; then
-    select_random_location_from_file
+randomize_location() {
+  if [[ -z "$move_meters" || "$move_meters" -eq 0 ]]; then
+    return
   fi
   IFS=',' read -r lat lon <<< "${current_location//[()]/}"
-  log "Running spoof cycle with base coordinates: $lat, $lon"
-
-  if [ -n "$move_meters" ]; then
-    angle=$(awk -v seed=$RANDOM 'BEGIN { srand(seed); print rand() * 2 * 3.14159265359 }')
-    random_radius=$(od -An -N2 -tu2 < /dev/urandom | awk -v max="$move_meters" '{print $1 % (max + 1)}')
-    delta_lat=$(awk -v d="$random_radius" -v a="$angle" 'BEGIN { printf "%.10f", (d * cos(a)) / 111320 }')
-    delta_lon=$(awk -v d="$random_radius" -v a="$angle" -v lat="$lat" 'BEGIN { printf "%.10f", (d * sin(a)) / (111320 * cos(lat * 3.14159265359 / 180)) }')
-    lat=$(awk -v l="$lat" -v d="$delta_lat" 'BEGIN { printf "%.10f", l + d }')
-    lon=$(awk -v l="$lon" -v d="$delta_lon" 'BEGIN { printf "%.10f", l + d }')
-    log "Random movement applied: $random_radius m → New coords: $lat, $lon"
-  fi
-
-  log "Calling locsim with final coordinates: $lat, $lon"
-  safe_locsim_start "$lat" "$lon"
+  angle=$(awk -v seed=$RANDOM 'BEGIN { srand(seed); print rand() * 2 * 3.14159265359 }')
+  random_radius=$(od -An -N2 -tu2 < /dev/urandom | awk -v max="$move_meters" '{print $1 % (max + 1)}')
+  delta_lat=$(awk -v d="$random_radius" -v a="$angle" 'BEGIN { printf "%.10f", (d * cos(a)) / 111320 }')
+  delta_lon=$(awk -v d="$random_radius" -v a="$angle" -v lat="$lat" 'BEGIN { printf "%.10f", (d * sin(a)) / (111320 * cos(lat * 3.14159265359 / 180)) }')
+  lat=$(awk -v l="$lat" -v d="$delta_lat" 'BEGIN { printf "%.10f", l + d }')
+  lon=$(awk -v l="$lon" -v d="$delta_lon" 'BEGIN { printf "%.10f", l + d }')
+  current_location="($lat, $lon)"
+  log_debug "run" "Position randomisiert um $random_radius Meter: $current_location"
 }
 
-# --- Batch Modus ---
-if [[ $is_batch == true ]]; then
-  [[ "$debug_mode" == true ]] && log "Running in batch mode"
+safe_locsim_start() {
+  IFS=',' read -r lat lon <<< "${current_location//[()]/}"
+  log_debug "locsim" "Starte locsim mit Koordinaten: $lat, $lon"
+  locsim start "$lat" "$lon"
+}
 
-  if [[ "$execution_mode" == "file" ]]; then
-    [[ -z "$subfolder" ]] && echo "Missing 'subfolder'" && exit 1
-    [[ -z "$file_name" ]] && echo "Missing 'file_name'" && exit 1
-    SUBFOLDER="$BASE_DIR/$subfolder"
-    selected_file="$SUBFOLDER/$file_name"
+log_debug "init" "Starte Autorelo-Skript. auto_wait_time=${auto_wait_time}min, check_interval=${check_interval_minutes}min, debug_mode=$debug_mode"
+last_run_time=0
 
-    if [[ ! -d "$SUBFOLDER" ]]; then
-      echo "Subfolder '$SUBFOLDER' does not exist"
-      exit 1
-    fi
+# Hauptloop
+while true; do
+  current_time=$(date +%s)
+  elapsed=$((current_time - last_run_time))
 
-    if [[ ! -f "$selected_file" ]]; then
-      echo "File '$file_name' not found in '$SUBFOLDER'"
-      exit 1
-    fi
-  elif [[ "$execution_mode" == "manual" ]]; then
-    [[ -z "$current_location" ]] && echo "Missing 'current_location'" && exit 1
+  if (( elapsed >= auto_wait_seconds )); then
+    select_random_location_from_file
+    randomize_location
+    safe_locsim_start
+    last_run_time=$(date +%s)
+    sleep_duration="$check_interval_seconds"
   else
-    echo "Unknown execution_mode: $execution_mode"
-    exit 1
+    sleep_duration=$((auto_wait_seconds - elapsed))
+    if (( sleep_duration > check_interval_seconds )); then
+      sleep_duration="$check_interval_seconds"
+    fi
+    log_debug "run" "Noch $elapsed Sekunden vergangen. Nächster Check in ${sleep_duration}s."
   fi
 
-  while true; do
-    run_spoof_cycle
-    log "Sleeping for $auto_wait_time minutes"
-    sleep "$((auto_wait_time * 60))"
-  done
-fi
+  sleep "$sleep_duration"
+done
