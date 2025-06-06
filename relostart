@@ -1,6 +1,6 @@
 #!/bin/bash -i
 
-CONFIG_BASE_DIR="./conf"
+CONFIG_BASE_DIR="./conf/relo"
 PID_FILE="/tmp/runpid.pid"
 SCRIPT="./auto.sh"
 

@@ -1,0 +1,130 @@
+#!/bin/sh
+
+PID_FILE="/tmp/autotrav_pid.txt"
+LOC_FILE="/tmp/location.txt"
+
+# Select directory under ./rou
+echo "Select a directory under ./rou:"
+dirs=$(find ./rou -mindepth 1 -maxdepth 1 -type d | sort)
+i=1
+for d in $dirs; do
+  echo "  $i) $d"
+  i=$((i+1))
+done
+
+printf "Enter number: "
+read -r dir_choice
+
+dir_count=$(echo "$dirs" | wc -l)
+if ! echo "$dir_choice" | grep -Eq "^[0-9]+$" || [ "$dir_choice" -lt 1 ] || [ "$dir_choice" -gt "$dir_count" ]; then
+  echo "Invalid directory selection."
+  exit 1
+fi
+
+chosen_dir=$(echo "$dirs" | sed -n "${dir_choice}p")
+
+# Select GPX file inside chosen directory
+echo "Select a GPX file inside $chosen_dir:"
+files=$(find "$chosen_dir" -maxdepth 1 -type f -name '*.gpx' | sort)
+file_count=$(echo "$files" | wc -l)
+
+if [ "$file_count" -eq 0 ]; then
+  echo "No GPX files found in $chosen_dir."
+  exit 1
+fi
+
+i=1
+for f in $files; do
+  echo "  $i) $(basename "$f")"
+  i=$((i+1))
+done
+
+printf "Enter number: "
+read -r file_choice
+
+if ! echo "$file_choice" | grep -Eq "^[0-9]+$" || [ "$file_choice" -lt 1 ] || [ "$file_choice" -gt "$file_count" ]; then
+  echo "Invalid file selection."
+  exit 1
+fi
+
+chosen_file=$(echo "$files" | sed -n "${file_choice}p")
+
+# Ask if user wants to define start lat/lon
+printf "Do you want to define start latitude and longitude? (y/n): "
+read -r define_loc
+
+start_lat=""
+start_lon=""
+
+if [ "$define_loc" = "y" ] || [ "$define_loc" = "Y" ]; then
+  # Check if location file exists
+  if [ -f "$LOC_FILE" ]; then
+    # Ask if want to use saved location
+    printf "Use saved location from $LOC_FILE? (y/n): "
+    read -r use_saved
+
+    if [ "$use_saved" = "y" ] || [ "$use_saved" = "Y" ]; then
+      # Read lat lon from file
+      start_lat=$(sed -n '1p' "$LOC_FILE")
+      start_lon=$(sed -n '2p' "$LOC_FILE")
+      echo "Using saved location: lat=$start_lat, lon=$start_lon"
+    else
+      # Ask for manual input
+      printf "Enter start latitude: "
+      read -r start_lat
+      printf "Enter start longitude: "
+      read -r start_lon
+    fi
+  else
+    # No saved location file, ask for manual input
+    printf "Enter start latitude: "
+    read -r start_lat
+    printf "Enter start longitude: "
+    read -r start_lon
+  fi
+fi
+
+# Validate lat/lon if given
+if [ -n "$start_lat" ] && [ -n "$start_lon" ]; then
+  if ! echo "$start_lat" | grep -Eq '^-?[0-9]+(\.[0-9]+)?$' || ! echo "$start_lon" | grep -Eq '^-?[0-9]+(\.[0-9]+)?$'; then
+    echo "Invalid latitude or longitude format."
+    exit 1
+  fi
+fi
+
+# Mandatory speed_kmh
+printf "Enter speed_kmh (integer): "
+read -r speed_kmh
+if ! echo "$speed_kmh" | grep -Eq '^[0-9]+$'; then
+  echo "speed_kmh must be an integer."
+  exit 1
+fi
+
+# Mandatory interval_seconds
+printf "Enter interval_seconds (integer): "
+read -r interval_seconds
+if ! echo "$interval_seconds" | grep -Eq '^[0-9]+$'; then
+  echo "interval_seconds must be an integer."
+  exit 1
+fi
+
+# Kill old autotrav.sh process if running
+if [ -f "$PID_FILE" ]; then
+  old_pid=$(cat "$PID_FILE")
+  if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
+    echo "Killing old autotrav.sh process with PID $old_pid"
+    kill "$old_pid"
+    sleep 1
+  fi
+fi
+
+# Build command with optional start_lat and start_lon parameters
+cmd="./autotrav.sh \"$chosen_file\" $speed_kmh $interval_seconds"
+if [ -n "$start_lat" ] && [ -n "$start_lon" ]; then
+  cmd="$cmd $start_lat $start_lon"
+fi
+
+# Start the autotrav.sh script in background, disown it
+sh -c "$cmd & echo \$! > $PID_FILE; disown"
+
+echo "Started autotrav.sh with PID $(cat $PID_FILE)"
