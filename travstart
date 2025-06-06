@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash -i
 
 PID_FILE="/tmp/autotrav_pid.txt"
 LOC_FILE="/tmp/location.txt"
@@ -119,7 +119,7 @@ if [ -f "$PID_FILE" ]; then
 fi
 
 # Build command with optional start_lat and start_lon parameters
-cmd="./autotrav.sh \"$chosen_file\" $speed_kmh $interval_seconds"
+cmd="./autotrav \"$chosen_file\" $speed_kmh $interval_seconds"
 if [ -n "$start_lat" ] && [ -n "$start_lon" ]; then
   cmd="$cmd $start_lat $start_lon"
 fi
