@@ -27,21 +27,21 @@ if ! echo "$SPEED_KMH" | grep -Eq '^[0-9]+$' || ! echo "$INTERVAL_SECONDS" | gre
 fi
 
 # Ensure either both lat/lon are given or neither
-if { [ -n "$START_LAT" ] && [ -z "$START_LON" ]; } || \
-   { [ -z "$START_LAT" ] && [ -n "$START_LON" ]; }; then
-  log_debug "Error: Either provide both latitude and longitude, or neither."
-  log_debug "Usage: $0 <gpx_file> <speed_kmh> <interval_seconds> [<start_lat> <start_lon>]"
-  exit 1
-fi
+#if { [ -n "$START_LAT" ] && [ -z "$START_LON" ]; } || \
+#   { [ -z "$START_LAT" ] && [ -n "$START_LON" ]; }; then
+#  log_debug "Error: Either provide both latitude and longitude, or neither."
+#  log_debug "Usage: $0 <gpx_file> <speed_kmh> <interval_seconds> [<start_lat> <start_lon>]"
+#  exit 1
+#fi
 
 # If both are provided, validate their numeric format
-if [ -n "$START_LAT" ] && [ -n "$START_LON" ]; then
-  if ! echo "$START_LAT" | grep -Eq '^-?[0-9]+(\.[0-9]+)?$' || \
-     ! echo "$START_LON" | grep -Eq '^-?[0-9]+(\.[0-9]+)?$'; then
-    log_debug "Error: Invalid format for latitude or longitude. Must be decimal numbers."
-    exit 1
-  fi
-fi
+#if [ -n "$START_LAT" ] && [ -n "$START_LON" ]; then
+#  if ! echo "$START_LAT" | grep -Eq '^-?[0-9]+(\.[0-9]+)?$' || \
+#     ! echo "$START_LON" | grep -Eq '^-?[0-9]+(\.[0-9]+)?$'; then
+#    log_debug "Error: Invalid format for latitude or longitude. Must be decimal numbers."
+#    exit 1
+#  fi
+#fi
 
 # --- 3. Define helper functions ---
 
