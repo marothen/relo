@@ -2,42 +2,57 @@
 
 LOCATION_LOG_FILE="/tmp/location_latest.txt"
 
-# Get optional positional arguments
+log_debug() {
+  :
+  # Empty for now — add logging here if needed
+}
+
+# --- 1. Read positional arguments ---
+GPX_FILE="$1"
+SPEED_KMH="$2"
+INTERVAL_SECONDS="$3"
 START_LAT="$4"
 START_LON="$5"
 
-# Check that speed and interval are integers
-if ! echo "$2" | grep -Eq '^[0-9]+$' || ! echo "$3" | grep -Eq '^[0-9]+$'; then
-  echo "Error: speed_kmh and interval_seconds must be integers."
+# --- 2. Validate required parameters ---
+if [ -z "$GPX_FILE" ] || [ -z "$SPEED_KMH" ] || [ -z "$INTERVAL_SECONDS" ]; then
+  log_debug "Usage: $0 <gpx_file> <speed_kmh> <interval_seconds> [<start_lat> <start_lon>]"
   exit 1
 fi
 
-# Validate correct usage of positional parameters
+# Check that speed and interval are integers
+if ! echo "$SPEED_KMH" | grep -Eq '^[0-9]+$' || ! echo "$INTERVAL_SECONDS" | grep -Eq '^[0-9]+$'; then
+  log_debug "Error: speed_kmh and interval_seconds must be integers."
+  exit 1
+fi
+
+# Ensure either both lat/lon are given or neither
 if { [ -n "$START_LAT" ] && [ -z "$START_LON" ]; } || \
    { [ -z "$START_LAT" ] && [ -n "$START_LON" ]; }; then
-  echo "Error: Either provide both latitude and longitude, or neither."
-  echo "Usage: $0 [<latitude> <longitude>]"
+  log_debug "Error: Either provide both latitude and longitude, or neither."
+  log_debug "Usage: $0 <gpx_file> <speed_kmh> <interval_seconds> [<start_lat> <start_lon>]"
   exit 1
 fi
 
-# Validate numeric format if both are given
+# If both are provided, validate their numeric format
 if [ -n "$START_LAT" ] && [ -n "$START_LON" ]; then
   if ! echo "$START_LAT" | grep -Eq '^-?[0-9]+(\.[0-9]+)?$' || \
      ! echo "$START_LON" | grep -Eq '^-?[0-9]+(\.[0-9]+)?$'; then
-    echo "Error: Invalid format for latitude or longitude. Must be decimal numbers."
+    log_debug "Error: Invalid format for latitude or longitude. Must be decimal numbers."
     exit 1
   fi
 fi
 
-# Function to safely call locsim and overwrite latest lat/lon file
+# --- 3. Define helper functions ---
+
 safe_locsim_start() {
   if ! command -v locsim >/dev/null 2>&1; then
-    echo "Warning: 'locsim' is not installed or not in your PATH." >&2
+    log_debug "Warning: 'locsim' is not installed or not in your PATH." >&2
     return 1
   fi
   lat="$1"
   lon="$2"
-  echo "$lat $lon" > "$LOCATION_LOG_FILE"  # Overwrite file with latest coordinates
+  echo "$lat $lon" > "$LOCATION_LOG_FILE"   # Overwrite file with latest coords
   locsim start "$lat" "$lon"
 }
 
@@ -50,7 +65,7 @@ haversine_distance() {
     dlon = to_rad(lon2 - lon1)
     lat1 = to_rad(lat1)
     lat2 = to_rad(lat2)
-    a = sin(dlat / 2)^2 + cos(lat1) * cos(lat2) * sin(dlon / 2)^2
+    a = sin(dlat/2)^2 + cos(lat1)*cos(lat2)*sin(dlon/2)^2
     c = 2 * atan2(sqrt(a), sqrt(1 - a))
     print R * c
   }'
@@ -65,59 +80,10 @@ interpolate_point() {
   }'
 }
 
-if [ -z "$gpx_file" ]; then
-  subdir_tmp=$(mktemp)
-  find ./rou -mindepth 1 -maxdepth 1 -type d > "$subdir_tmp"
-  i=1
-  while IFS= read -r dir; do
-    echo "$i) $dir"
-    i=$((i + 1))
-  done < "$subdir_tmp"
-  printf "Enter the number corresponding to the subdirectory: "
-  read -r subdir_index
-  subdir=$(sed -n "${subdir_index}p" "$subdir_tmp")
-  rm -f "$subdir_tmp"
-
-  gpx_tmp=$(mktemp)
-  find "$subdir" -type f -name "*.gpx" > "$gpx_tmp"
-  i=1
-  while IFS= read -r file; do
-    echo "$i) $file"
-    i=$((i + 1))
-  done < "$gpx_tmp"
-  printf "Enter the number corresponding to the GPX file: "
-  read -r gpx_file_index
-  gpx_file=$(sed -n "${gpx_file_index}p" "$gpx_tmp")
-  rm -f "$gpx_tmp"
-
-  printf "Enter speed in km/h: "
-  read -r SPEED_KMH
-fi
-
-SPEED=$(expr "$SPEED_KMH" \* 1000 / 3600)
-
-if [ -z "$INTERVAL_SECONDS" ]; then
-  echo "Choose the interval unit:"
-  echo "1) Minutes"
-  echo "2) Seconds"
-  printf "Enter 1 for minutes or 2 for seconds: "
-  read -r interval_choice
-  if [ "$interval_choice" -eq 1 ]; then
-    printf "Enter wait interval in minutes: "
-    read -r TRIGGER_INTERVAL
-    INTERVAL_SECONDS=$((TRIGGER_INTERVAL * 60))
-  elif [ "$interval_choice" -eq 2 ]; then
-    printf "Enter wait interval in seconds: "
-    read -r INTERVAL_SECONDS
-  else
-    echo "Invalid choice." >&2
-    exit 1
-  fi
-fi
-
-coords=$(awk -F'"' '/<trkpt / { print $2, $4, $6}' "$gpx_file")
+# --- 4. Read GPX coordinates ---
+coords=$(awk -F'"' '/<trkpt / { print $2, $4, $6}' "$GPX_FILE")
 if [ -z "$coords" ]; then
-  echo "No coordinates found in GPX file. Exiting." >&2
+  log_debug "No coordinates found in GPX file. Exiting." >&2
   exit 1
 fi
 
@@ -125,12 +91,13 @@ coord_tmp=$(mktemp)
 echo "$coords" > "$coord_tmp"
 num_points=$(wc -l < "$coord_tmp")
 
+# --- 5. Determine starting point ---
 if [ -n "$START_LAT" ] && [ -n "$START_LON" ]; then
-  echo "Finding the closest point to the given coordinates..."
+  log_debug "Finding the closest GPX point to ($START_LAT, $START_LON)..."
   min_distance=999999999
   found_index=""
 
-  for i in $(seq 1 $num_points); do
+  for i in $(seq 1 "$num_points"); do
     line=$(sed -n "${i}p" "$coord_tmp")
     lat=$(echo "$line" | awk '{print $1}')
     lon=$(echo "$line" | awk '{print $2}')
@@ -144,32 +111,36 @@ if [ -n "$START_LAT" ] && [ -n "$START_LON" ]; then
   done
 
   if [ -z "$found_index" ]; then
-    echo "Error: Could not determine a start location close to the given coordinates." >&2
+    log_debug "Error: Could not find a starting point near ($START_LAT, $START_LON)." >&2
     exit 1
   fi
-  echo "Closest point found at index $found_index with distance $min_distance meters."
+  log_debug "Closest point at index $found_index (distance $min_distance m)."
   curr_index=$found_index
   curr_lat=$(sed -n "${curr_index}p" "$coord_tmp" | awk '{print $1}')
   curr_lon=$(sed -n "${curr_index}p" "$coord_tmp" | awk '{print $2}')
 else
+  # Start at the very first point
   curr_index=1
   curr_lat=$(sed -n "1p" "$coord_tmp" | awk '{print $1}')
   curr_lon=$(sed -n "1p" "$coord_tmp" | awk '{print $2}')
 fi
 
+# --- 6. Kick off the simulation ---
 safe_locsim_start "$curr_lat" "$curr_lon"
-echo "Sleeping for $INTERVAL_SECONDS seconds before starting the simulation."
+log_debug "Sleeping for $INTERVAL_SECONDS seconds before continuing..."
 sleep "$INTERVAL_SECONDS"
 
-while [ "$curr_index" -lt $((num_points - 1)) ]; do
-  start=$(date +%s)
+SPEED=$(( SPEED_KMH * 1000 / 3600 ))
+
+while [ "$curr_index" -lt $(( num_points - 1 )) ]; do
+  start_time=$(date +%s)
   segment_start_lat="$curr_lat"
   segment_start_lon="$curr_lon"
-  distance_needed=$((SPEED * INTERVAL_SECONDS))
-  current_interval_seconds=$INTERVAL_SECONDS
+  distance_needed=$(( SPEED * INTERVAL_SECONDS ))
+  remaining_interval="$INTERVAL_SECONDS"
 
-  while [ "$curr_index" -lt $((num_points - 1)) ]; do
-    next_line=$(sed -n "$((curr_index + 1))p" "$coord_tmp")
+  while [ "$curr_index" -lt $(( num_points - 1 )) ]; do
+    next_line=$(sed -n "$(( curr_index + 1 ))p" "$coord_tmp")
     next_lat=$(echo "$next_line" | awk '{print $1}')
     next_lon=$(echo "$next_line" | awk '{print $2}')
     next_wait=$(echo "$next_line" | awk '{print $3}')
@@ -181,15 +152,18 @@ while [ "$curr_index" -lt $((num_points - 1)) ]; do
       landing_point=$(interpolate_point "$segment_start_lat" "$segment_start_lon" "$next_lat" "$next_lon" "$ratio")
       landing_lat=$(echo "$landing_point" | awk '{print $1}')
       landing_lon=$(echo "$landing_point" | awk '{print $2}')
+
       safe_locsim_start "$landing_lat" "$landing_lon"
-      end=$(date +%s)
-      elapsed=$((end - start))
-      if [ "$elapsed" -gt "$current_interval_seconds" ]; then
-        current_interval_seconds=0
+
+      end_time=$(date +%s)
+      elapsed=$(( end_time - start_time ))
+      if [ "$elapsed" -gt "$remaining_interval" ]; then
+        remaining_interval=0
       else
-        current_interval_seconds=$((current_interval_seconds - elapsed))
+        remaining_interval=$(( remaining_interval - elapsed ))
       fi
-      sleep "$current_interval_seconds"
+
+      sleep "$remaining_interval"
       curr_lat="$landing_lat"
       curr_lon="$landing_lon"
       break
@@ -197,20 +171,20 @@ while [ "$curr_index" -lt $((num_points - 1)) ]; do
       if [ -n "$next_wait" ]; then
         safe_locsim_start "$next_lat" "$next_lon"
         sleep "$next_wait"
-        distance_needed=$((SPEED * INTERVAL_SECONDS))
+        distance_needed=$(( SPEED * INTERVAL_SECONDS ))
         segment_start_lat="$next_lat"
         segment_start_lon="$next_lon"
-        curr_index=$((curr_index + 1))
+        curr_index=$(( curr_index + 1 ))
       else
-        distance_needed=$((distance_needed - segment_distance_int))
+        distance_needed=$(( distance_needed - segment_distance_int ))
         segment_start_lat="$next_lat"
         segment_start_lon="$next_lon"
-        curr_index=$((curr_index + 1))
+        curr_index=$(( curr_index + 1 ))
       fi
     fi
   done
 
-  if [ "$curr_index" -ge $((num_points - 1)) ]; then
+  if [ "$curr_index" -ge $(( num_points - 1 )) ]; then
     final_lat="$segment_start_lat"
     final_lon="$segment_start_lon"
     last_distance=$(haversine_distance "$curr_lat" "$curr_lon" "$final_lat" "$final_lon")
@@ -221,5 +195,6 @@ while [ "$curr_index" -lt $((num_points - 1)) ]; do
   fi
 done
 
+# --- 7. Cleanup ---
 rm -f "$coord_tmp"
-echo "Simulation complete."
+log_debug "Simulation complete."
