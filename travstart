@@ -62,8 +62,7 @@ if [ "$define_loc" = "y" ] || [ "$define_loc" = "Y" ]; then
     read -r use_saved
 
     if [ "$use_saved" = "y" ] || [ "$use_saved" = "Y" ]; then
-      start_lat=$(sed -n '1p' "$LOC_FILE" | tr -d '\r\n')
-      start_lon=$(sed -n '2p' "$LOC_FILE" | tr -d '\r\n')
+      read -r start_lat start_lon < "$LOC_FILE"
       echo "Using saved location: lat=$start_lat, lon=$start_lon"
     else
       printf "Enter start latitude: "
