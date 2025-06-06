@@ -3,8 +3,14 @@
 LOCATION_LOG_FILE="/tmp/location_latest.txt"
 
 # Get optional positional arguments
-START_LAT="$1"
-START_LON="$2"
+START_LAT="$4"
+START_LON="$5"
+
+# Check that speed and interval are integers
+if ! echo "$2" | grep -Eq '^[0-9]+$' || ! echo "$3" | grep -Eq '^[0-9]+$'; then
+  echo "Error: speed_kmh and interval_seconds must be integers."
+  exit 1
+fi
 
 # Validate correct usage of positional parameters
 if { [ -n "$START_LAT" ] && [ -z "$START_LON" ]; } || \
