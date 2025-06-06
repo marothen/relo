@@ -119,12 +119,12 @@ if [ -f "$PID_FILE" ]; then
 fi
 
 # Build command with optional start_lat and start_lon parameters
-cmd="./autotrav \"$chosen_file\" $speed_kmh $interval_seconds"
+cmd="./autotrav.sh \"$chosen_file\" $speed_kmh $interval_seconds"
 if [ -n "$start_lat" ] && [ -n "$start_lon" ]; then
   cmd="$cmd $start_lat $start_lon"
 fi
 
 # Start the autotrav.sh script in background, disown it
-sh -c "$cmd & echo \$! > $PID_FILE; disown"
+bash -c "$cmd & echo \$! > $PID_FILE; disown"
 
 echo "Started autotrav.sh with PID $(cat $PID_FILE)"

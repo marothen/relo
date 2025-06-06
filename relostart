@@ -2,7 +2,7 @@
 
 CONFIG_BASE_DIR="./conf/relo"
 PID_FILE="/tmp/runpid.pid"
-SCRIPT="./autorelo"
+SCRIPT="./autorelo.sh"
 
 # Prompt user to select config if none provided
 if [ $# -ne 1 ]; then
