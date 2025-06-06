@@ -83,10 +83,18 @@ else
   start_lon=""
 fi
 
-# Validate lat/lon if given
+# Ensure either both lat/lon are given or neither
+if { [ -n "$start_lat" ] && [ -z "$start_lon" ]; } || \
+   { [ -z "$start_lat" ] && [ -n "$start_lon" ]; }; then
+  echo "Error: Either provide both latitude and longitude, or neither."
+  exit 1
+fi
+
+# Validate format only if both are provided
 if [ -n "$start_lat" ] && [ -n "$start_lon" ]; then
-  if ! echo "$start_lat" | grep -Eq '^-?[0-9]+(\.[0-9]+)?$' || ! echo "$start_lon" | grep -Eq '^-?[0-9]+(\.[0-9]+)?$'; then
-    echo "Invalid latitude or longitude format."
+  if ! echo "$start_lat" | grep -Eq '^-?[0-9]+(\.[0-9]+)?$' || \
+     ! echo "$start_lon" | grep -Eq '^-?[0-9]+(\.[0-9]+)?$'; then
+    echo "Invalid latitude or longitude format. Must be decimal numbers."
     exit 1
   fi
 fi
