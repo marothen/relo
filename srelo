@@ -4,6 +4,9 @@ CONFIG_BASE_DIR="./conf/relo"
 PID_FILE="/tmp/runpid.pid"
 SCRIPT="./arelo.sh"
 
+# Flag to enable or disable logging
+ENABLE_DEBUG=false
+
 # Prompt user to select config if none provided
 if [ $# -ne 1 ]; then
   echo "No config basename given."
@@ -67,9 +70,21 @@ if [ -f "$PID_FILE" ]; then
   rm -f "$PID_FILE"
 fi
 
+# Ask the user if they want to enable debugging
+read -rp "Do you want to enable debugging? (y/n): " enable_debug
+if [[ "$enable_debug" =~ ^[Yy]$ ]]; then
+  DEBUG_PARAM="debug"
+else
+  DEBUG_PARAM=""
+fi
+
 # Start new process
 echo "Starting new process with config '$CONFIG_PATH'..."
-bash "$SCRIPT" "$CONFIG_PATH" &
+if [[ -n "$DEBUG_PARAM" ]]; then
+  bash "$SCRIPT" "$CONFIG_PATH" "$DEBUG_PARAM" &
+else
+  bash "$SCRIPT" "$CONFIG_PATH" &
+fi
 NEW_PID=$!
 disown
 

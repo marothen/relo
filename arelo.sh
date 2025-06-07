@@ -3,9 +3,17 @@
 BASE_DIR="./locations"
 mkdir -p "$BASE_DIR"
 
+# Flag to enable or disable logging
+ENABLE_DEBUG=false
+if [[ -n "$2" ]]; then
+  ENABLE_DEBUG=true
+fi
+
 log_debug() {
-  local debug_file="./debug.log"  # Path to the debug file
-  echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$debug_file"
+  if [[ "$ENABLE_DEBUG" == true ]]; then
+    local debug_file="./debug.log"  # Path to the debug file
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$debug_file"
+  fi
 }
 
 log_debug "Starting script with config file: $1"
