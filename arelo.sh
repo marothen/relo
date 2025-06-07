@@ -55,6 +55,7 @@ run_spoof_cycle() {
   select_random_location_from_file
 
   IFS=',' read -r lat lon <<< "${current_location//[()]/}"
+  
 
   debug "Coordinates: $lat, $lon"
 
@@ -74,8 +75,8 @@ run_spoof_cycle() {
 }
 
 if [[ -z "$sleep_time" ]]; then
-  debug "Error: 'sleep_time' not defined in config." >&2
-  exit 1
+  sleep_time=1
+  log_debug "config" "'sleep_time' not defined in config. Defaulting to 1."
 fi
 
 if [[ -z "$cycle_interval" ]]; then

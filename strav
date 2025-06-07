@@ -114,25 +114,25 @@ if ! echo "$interval_seconds" | grep -Eq '^[0-9]+$'; then
   exit 1
 fi
 
-# Kill old autotrav.sh process if running
+# Kill old process if running
 if [ -f "$PID_FILE" ]; then
   old_pid=$(cat "$PID_FILE")
   if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
-    echo "Killing old autotrav.sh process with PID $old_pid"
+    echo "Killing old process with PID $old_pid"
     kill "$old_pid"
     sleep 1
   fi
 fi
 
 # Build command with optional lat/lon
-cmd="./autotrav.sh \"$chosen_file\" $speed_kmh $interval_seconds"
+cmd="./atrav.sh \"$chosen_file\" $speed_kmh $interval_seconds"
 if [ -n "$start_lat" ] && [ -n "$start_lon" ]; then
   cmd="$cmd $start_lat $start_lon"
 fi
 
 echo "Running: $cmd"
 
-# Start the autotrav.sh script in background and disown
+# Start the atrav.sh script in background and disown
 bash -c "$cmd & echo \$! > $PID_FILE; disown"
 
-echo "Started autotrav.sh with PID $(cat $PID_FILE)"
+echo "Started atrav.sh with PID $(cat $PID_FILE)"
