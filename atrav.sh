@@ -112,7 +112,6 @@ num_points=$(wc -l < "$coord_tmp")
 # --- 5. Determine starting point ---
 if [ -n "$START_LAT" ] && [ -n "$START_LON" ]; then
   log_debug "Finding the closest GPX point to ($START_LAT, $START_LON)..."
-  min_distance=999999999
   found_index=""
   
   # Step 1: Search for an exact match
