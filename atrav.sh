@@ -114,19 +114,39 @@ if [ -n "$START_LAT" ] && [ -n "$START_LON" ]; then
   log_debug "Finding the closest GPX point to ($START_LAT, $START_LON)..."
   min_distance=999999999
   found_index=""
-
+  
+  # Step 1: Search for an exact match
   for i in $(seq 1 "$num_points"); do
     line=$(sed -n "${i}p" "$coord_tmp")
     lat=$(echo "$line" | awk '{print $1}')
     lon=$(echo "$line" | awk '{print $2}')
-    distance=$(python3 ./haversine.py "$START_LAT" "$START_LON" "$lat" "$lon")
-    distance_int=$(printf "%.0f" "$distance")
-
-    if [ "$distance_int" -lt "$min_distance" ]; then
-      min_distance="$distance_int"
+    
+    if [ "$lat" = "$START_LAT" ] && [ "$lon" = "$START_LON" ]; then
       found_index="$i"
+      log_debug "Exact match found at index $found_index."
+      break
     fi
   done
+
+  # Step 2: If no exact match, search for the closest point
+  if [ -z "$found_index" ]; then
+    log_debug "No exact match found. Finding the closest GPX point to ($START_LAT, $START_LON)..."
+    min_distance=999999999
+
+    for i in $(seq 1 "$num_points"); do
+      line=$(sed -n "${i}p" "$coord_tmp")
+      lat=$(echo "$line" | awk '{print $1}')
+      lon=$(echo "$line" | awk '{print $2}')
+      distance=$(python3 ./haversine.py "$START_LAT" "$START_LON" "$lat" "$lon")
+      distance_int=$(printf "%.0f" "$distance")
+
+      if [ "$distance_int" -lt "$min_distance" ]; then
+        min_distance="$distance_int"
+        found_index="$i"
+      fi
+    done
+    log_debug "Closest point found at index $found_index with distance $min_distance."
+  fi
 
   if [ -z "$found_index" ]; then
     log_debug "Error: Could not find a starting point near ($START_LAT, $START_LON)." >&2
