@@ -2,17 +2,37 @@
 
 LOCATION_LOG_FILE="/tmp/location_latest.txt"
 
-log_debug() {
-  :
-  # Empty for now — add logging here if needed
-}
-
 # --- 1. Read positional arguments ---
 GPX_FILE="$1"
 SPEED_KMH="$2"
 INTERVAL_SECONDS="$3"
-START_LAT="$4"
-START_LON="$5"
+
+# Initialize optional parameters
+START_LAT=""
+START_LON=""
+ENABLE_DEBUG=false
+
+# --- 2. Handle optional parameters ---
+if [ "$#" -eq 4 ] && [ "$4" = "debug" ]; then
+  ENABLE_DEBUG=true
+elif [ "$#" -eq 5 ]; then
+  START_LAT="$4"
+  START_LON="$5"
+elif [ "$#" -eq 7 ] && [ "$7" = "debug" ]; then
+  START_LAT="$4"
+  START_LON="$5"
+  ENABLE_DEBUG=true
+fi
+
+
+
+log_debug() {
+  if [[ "$ENABLE_DEBUG" == true ]]; then
+    local debug_file="./debug/atrav_debug.log"  # Path to the debug file
+    mkdir -p "$(dirname "$debug_file")"        # Ensure the directory exists
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$debug_file"
+  fi
+}
 
 # --- 2. Validate required parameters ---
 if [ -z "$GPX_FILE" ] || [ -z "$SPEED_KMH" ] || [ -z "$INTERVAL_SECONDS" ]; then

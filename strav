@@ -124,10 +124,17 @@ if [ -f "$PID_FILE" ]; then
   fi
 fi
 
+
 # Build command with optional lat/lon
 cmd="./atrav.sh \"$chosen_file\" $speed_kmh $interval_seconds"
 if [ -n "$start_lat" ] && [ -n "$start_lon" ]; then
   cmd="$cmd $start_lat $start_lon"
+fi
+
+# Ask the user if they want to enable debugging
+read -rp "Do you want to enable debugging? (y/n): " enable_debug
+if [[ "$enable_debug" =~ ^[Yy]$ ]]; then
+  cmd="$cmd debug"
 fi
 
 echo "Running: $cmd"

@@ -11,7 +11,8 @@ fi
 
 log_debug() {
   if [[ "$ENABLE_DEBUG" == true ]]; then
-    local debug_file="./debug.log"  # Path to the debug file
+    local debug_file="./debug/arelo_debug.log"  # Path to the debug file
+    mkdir -p "$(dirname "$debug_file")"        # Ensure the directory exists
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$debug_file"
   fi
 }
