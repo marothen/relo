@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 LOCATION_LOG_FILE="/tmp/location_latest.txt"
 
@@ -23,8 +23,6 @@ elif [ "$#" -eq 7 ] && [ "$7" = "debug" ]; then
   START_LON="$5"
   ENABLE_DEBUG=true
 fi
-
-
 
 log_debug() {
   if [[ "$ENABLE_DEBUG" == true ]]; then
