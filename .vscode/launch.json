@@ -4,8 +4,8 @@
       {
         "type": "bashdb",
         "request": "launch",
-        "name": "trav",
-        "program": "${workspaceFolder}/trav.sh",
+        "name": "strav",
+        "program": "${workspaceFolder}/strav",
         "args": [],
         "env": {},
         "cwd": "${workspaceFolder}",
@@ -27,6 +27,16 @@
         "name": "arelo",
         "program": "${workspaceFolder}/arelo.sh",
         "args": ["./conf/relo/münchen_arbeit/cog.conf"],
+        "env": {},
+        "cwd": "${workspaceFolder}",
+        "bashdbPath": "${env:HOME}/bash-debug/install/bin/bashdb"
+      },
+      {
+        "type": "bashdb",
+        "request": "launch",
+        "name": "srelo",
+        "program": "${workspaceFolder}/srelo",
+        "args": [],
         "env": {},
         "cwd": "${workspaceFolder}",
         "bashdbPath": "${env:HOME}/bash-debug/install/bin/bashdb"
