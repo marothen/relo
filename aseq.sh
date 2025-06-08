@@ -134,15 +134,18 @@ while IFS=',' read -r type conf start_time end_time; do
   end_time=$((10#$end_time))
 
   # Calculate the adjusted time based on FAKE_TIME_DIFF
-  current_time=$(date '+%H%M')# Split current_time into hours and minutes
-  current_hours=$((10#${current_time:0:2}))  # Extract the first two digits (hours)
-  current_minutes=$((10#${current_time:2:2}))  # Extract the last two digits (minutes)
+  # Split current_time into hours and minutes
+  current_time=$(date '+%H%M')
+   # Extract the first two digits (hours)
+  current_hours=$((10#${current_time:0:2})) 
+  # Extract the last two digits (minutes)
+  current_minutes=$((10#${current_time:2:2}))  
 
   # Calculate total minutes by adding FAKE_TIME_DIFF
   total_minutes=$((current_hours * 60 + current_minutes + FAKE_TIME_DIFF))
 
   # Convert total minutes back to HHMM format
-  adjusted_hours=$((total_minutes / 60 % 24))  # Ensure hours wrap around after 24
+  adjusted_hours=$((total_minutes / 60 % 24))
   adjusted_minutes=$((total_minutes % 60))
 
   # Format adjusted_time as HHMM
