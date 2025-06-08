@@ -16,6 +16,15 @@ else
   FAKE_TIME="$3"
 fi
 
+
+log_debug() {
+  if [[ "$ENABLE_DEBUG" == true ]]; then
+    local debug_file="./debug/aseq_debug.log"  # Path to the debug file
+    mkdir -p "$(dirname "$debug_file")"        # Ensure the directory exists
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$debug_file"
+  fi
+}
+
 # Get the current time in HHMM format
 current_time=$(date '+%H%M')
 
@@ -142,9 +151,13 @@ while IFS=',' read -r type conf start_time end_time; do
   # Debug log for adjusted time
   log_debug "current_time=$current_time, FAKE_TIME_DIFF=$FAKE_TIME_DIFF, adjusted_time=$adjusted_time"
 
+  # Sanitize end_time and adjusted_time to remove any invalid characters or whitespace
+  end_time=$(echo "$end_time" | tr -d '[:space:]')
+  adjusted_time=$(echo "$adjusted_time" | tr -d '[:space:]')
+  
   # Skip lines where end_time is smaller than the current time, but only until the first non-skipped line is found
-  if [[ "$found_first_non_skipped_line" == false && "$end_time" -lt "$adjusted_time" ]]; then
-    log_debug "Skipping line with end_time=$end_time (smaller than current_time=$current_time)"
+  if [[ "$found_first_non_skipped_line" == false && $((10#$end_time)) -lt $((10#$adjusted_time)) ]]; then
+    log_debug "Skipping line with end_time=$end_time (smaller than adjusted_time=$adjusted_time)"
     continue
   fi
 

@@ -81,9 +81,9 @@ fi
 # Start new process
 echo "Starting new process with config '$CONFIG_PATH'..."
 if [[ -n "$DEBUG_PARAM" ]]; then
-  bash "$SCRIPT" "$CONFIG_PATH" "$DEBUG_PARAM" &
+  bash "$SCRIPT" "$CONFIG_PATH" "$DEBUG_PARAM" "null" "null" &
 else
-  bash "$SCRIPT" "$CONFIG_PATH" &
+  bash "$SCRIPT" "$CONFIG_PATH" "null" "null" "null" &
 fi
 NEW_PID=$!
 disown

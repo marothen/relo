@@ -143,9 +143,13 @@ while true; do
     current_time_hhmm=$(date '+%H%M')
   fi
 
+  # Sanitize current_time_hhmm and END_TIME to remove any invalid characters or whitespace
+  current_time_hhmm=$(echo "$current_time_hhmm" | tr -d '[:space:]')
+  END_TIME=$(echo "$END_TIME" | tr -d '[:space:]')
+
   # Check if END_TIME is defined and exit if the current time has reached or passed it
   if [[ -n "$END_TIME" ]]; then
-    if [[ "$current_time_hhmm" -ge "$END_TIME" ]]; then
+    if [[ $((10#$current_time_hhmm)) -ge $((10#$END_TIME)) ]]; then
       log_debug "End time $END_TIME reached. Exiting loop."
       break
     fi
