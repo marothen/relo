@@ -14,6 +14,16 @@
       {
         "type": "bashdb",
         "request": "launch",
+        "name": "atrav",
+        "program": "${workspaceFolder}/atrav.sh",
+        "args": ["./rou/short/femo/cog_femoho.gpx","160","60","debug"],
+        "env": {},
+        "cwd": "${workspaceFolder}",
+        "bashdbPath": "${env:HOME}/bash-debug/install/bin/bashdb"
+      },
+      {
+        "type": "bashdb",
+        "request": "launch",
         "name": "relo",
         "program": "${workspaceFolder}/relo.sh",
         "args": [],
@@ -26,7 +36,7 @@
         "request": "launch",
         "name": "arelo",
         "program": "${workspaceFolder}/arelo.sh",
-        "args": ["./conf/relo/münchen_arbeit/cog.conf"],
+        "args": ["./conf/relo/muenchen_arbeit/cog.conf","debug","0736","0730"],
         "env": {},
         "cwd": "${workspaceFolder}",
         "bashdbPath": "${env:HOME}/bash-debug/install/bin/bashdb"
@@ -37,6 +47,16 @@
         "name": "srelo",
         "program": "${workspaceFolder}/srelo",
         "args": [],
+        "env": {},
+        "cwd": "${workspaceFolder}",
+        "bashdbPath": "${env:HOME}/bash-debug/install/bin/bashdb"
+      },
+      {
+        "type": "bashdb",
+        "request": "launch",
+        "name": "aseq",
+        "program": "${workspaceFolder}/aseq.sh",
+        "args": ["./conf/seq/femo_tre_svalini.conf"],
         "env": {},
         "cwd": "${workspaceFolder}",
         "bashdbPath": "${env:HOME}/bash-debug/install/bin/bashdb"

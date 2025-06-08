@@ -1,0 +1,102 @@
+#!/bin/bash -i
+
+# Base directory for configuration files
+BASE_DIR="./conf/seq"
+PID_FILE="/tmp/runpid.pid"
+
+# Check if the base directory exists
+if [[ ! -d "$BASE_DIR" ]]; then
+  echo "Error: Base directory '$BASE_DIR' does not exist."
+  exit 1
+fi
+
+# Step 1: List subfolders
+echo "Select a subfolder:"
+subfolders=($(find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d | sort))
+for i in "${!subfolders[@]}"; do
+  echo "$((i + 1))) $(basename "${subfolders[$i]}")"
+done
+
+# Prompt the user to select a subfolder
+read -p "Enter the number of the subfolder: " subfolder_index
+if [[ ! "$subfolder_index" =~ ^[0-9]+$ ]] || ((subfolder_index < 1 || subfolder_index > ${#subfolders[@]})); then
+  echo "Invalid selection. Exiting."
+  exit 1
+fi
+
+# Get the selected subfolder
+selected_subfolder="${subfolders[$((subfolder_index - 1))]}"
+
+# Step 2: List files in the selected subfolder
+echo "Select a configuration file from '$selected_subfolder':"
+files=($(find "$selected_subfolder" -mindepth 1 -maxdepth 1 -type f | sort))
+for i in "${!files[@]}"; do
+  echo "$((i + 1))) $(basename "${files[$i]}")"
+done
+
+# Prompt the user to select a file
+read -p "Enter the number of the configuration file: " file_index
+if [[ ! "$file_index" =~ ^[0-9]+$ ]] || ((file_index < 1 || file_index > ${#files[@]})); then
+  echo "Invalid selection. Exiting."
+  exit 1
+fi
+
+# Get the selected file
+selected_file="${files[$((file_index - 1))]}"
+
+# Output the selected file
+echo "You selected: $selected_file"
+
+# Step 3: Ask the user if they want to define a fake time
+read -p "Do you want to define a fake time? (y/n): " define_fake_time
+if [[ "$define_fake_time" =~ ^[Yy]$ ]]; then
+  while true; do
+    read -p "Enter the fake time (HHMM): " FAKE_TIME
+    # Validate the input: must be a 4-digit number and represent a valid time
+    if [[ "$FAKE_TIME" =~ ^[0-9]{4}$ ]] && ((10#${FAKE_TIME:0:2} >= 0 && 10#${FAKE_TIME:0:2} <= 23)) && ((10#${FAKE_TIME:2:2} >= 0 && 10#${FAKE_TIME:2:2} <= 59)); then
+      echo "Fake time set to $FAKE_TIME."
+      break
+    else
+      echo "Invalid input. Please enter a valid 4-digit time in HHMM format (e.g., 0930 for 9:30 AM)."
+      exit 1
+    fi
+  done
+else
+  FAKE_TIME=""
+  echo "No fake time defined."
+fi
+
+# Step 4: Ask the user if they want to enable debugging
+read -p "Do you want to enable debugging? (y/n): " enable_debug
+if [[ "$enable_debug" =~ ^[Yy]$ ]]; then
+  DEBUG="debug"
+  echo "Debugging enabled."
+else
+  DEBUG=""
+  echo "Debugging disabled."
+fi
+
+# Kill old process if running
+if [ -f "$PID_FILE" ]; then
+  old_pid=$(cat "$PID_FILE")
+  if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
+    echo "Killing old process with PID $old_pid"
+    kill "$old_pid"
+    sleep 1
+  fi
+fi
+
+# Step 5: Start aseq.sh with the provided arguments
+echo "Starting aseq.sh with the selected file, debug mode, and fake time..."
+bash ./aseq.sh "$selected_file" "$DEBUG" "$FAKE_TIME" &  # Start in the background
+NEW_PID=$!
+disown  # Detach the process from the terminal
+echo "aseq.sh started in the background."
+
+echo "$NEW_PID" > "$PID_FILE"
+echo "New process started with PID $NEW_PID."
+
+
+
+
+

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LOCATION_LOG_FILE="/tmp/location_latest.txt"
+LOCATION_LOG_FILE="./track/location_latest.txt"
 
 # --- 1. Read positional arguments ---
 GPX_FILE="$1"
@@ -18,7 +18,7 @@ if [ "$#" -eq 4 ] && [ "$4" = "debug" ]; then
 elif [ "$#" -eq 5 ]; then
   START_LAT="$4"
   START_LON="$5"
-elif [ "$#" -eq 7 ] && [ "$7" = "debug" ]; then
+elif [ "$#" -eq 6 ] && [ "$6" = "debug" ]; then
   START_LAT="$4"
   START_LON="$5"
   ENABLE_DEBUG=true
@@ -40,7 +40,7 @@ fi
 
 # Check that speed and interval are integers
 if ! echo "$SPEED_KMH" | grep -Eq '^[0-9]+$' || ! echo "$INTERVAL_SECONDS" | grep -Eq '^[0-9]+$'; then
-  log_debug "Error: speed_kmh and interval_seconds must be integers."
+  log_debug "Error: speed_kmh and interval_seconds must be integers. Speed: $SPEED_KMH, Interval: $INTERVAL_SECONDS"
   exit 1
 fi
 
@@ -64,13 +64,14 @@ fi
 # --- 3. Define helper functions ---
 
 safe_locsim_start() {
-  if ! command -v locsim >/dev/null 2>&1; then
-    log_debug "Warning: 'locsim' is not installed or not in your PATH." >&2
-    return 1
-  fi
   lat="$1"
   lon="$2"
   echo "$lat $lon" > "$LOCATION_LOG_FILE"   # Overwrite file with latest coords
+  log_debug "Position saved to $LOCATION_LOG_FILE: ($lat, $lon)"
+  if ! command -v locsim >/dev/null 2>&1; then
+    log_debug "Warning: 'locsim' is not installed or not in your PATH."
+    return 1
+  fi
   locsim start "$lat" "$lon"
 }
 
@@ -97,11 +98,11 @@ interpolate_point() {
     printf "%.6f %.6f", lat, lon
   }'
 }
-
+log_debug "Starting simulation with GPX file: $GPX_FILE, Speed: $SPEED_KMH km/h, Interval: $INTERVAL_SECONDS seconds"
 # --- 4. Read GPX coordinates ---
 coords=$(awk -F'"' '/<trkpt / { print $2, $4, $6}' "$GPX_FILE")
 if [ -z "$coords" ]; then
-  log_debug "No coordinates found in GPX file. Exiting." >&2
+  log_debug "No coordinates found in GPX file $GPX_FILE. Exiting." >&2
   exit 1
 fi
 
@@ -112,40 +113,46 @@ num_points=$(wc -l < "$coord_tmp")
 # --- 5. Determine starting point ---
 if [ -n "$START_LAT" ] && [ -n "$START_LON" ]; then
   log_debug "Finding the closest GPX point to ($START_LAT, $START_LON)..."
+    # Initialize margins
+  left_margin=1
+  right_margin="$num_points"
   found_index=""
-  
-  # Step 1: Search for an exact match
-  for i in $(seq 1 "$num_points"); do
-    line=$(sed -n "${i}p" "$coord_tmp")
-    lat=$(echo "$line" | awk '{print $1}')
-    lon=$(echo "$line" | awk '{print $2}')
-    
-    if [ "$lat" = "$START_LAT" ] && [ "$lon" = "$START_LON" ]; then
-      found_index="$i"
-      log_debug "Exact match found at index $found_index."
-      break
+  min_distance=999999999
+
+  while [ "$left_margin" -le "$right_margin" ]; do
+    # Calculate the middle point
+    middle_index=$(( (left_margin + right_margin) / 2 ))
+    middle_line=$(sed -n "${middle_index}p" "$coord_tmp")
+    middle_lat=$(echo "$middle_line" | awk '{print $1}')
+    middle_lon=$(echo "$middle_line" | awk '{print $2}')
+
+    # Calculate distances for left, middle, and right points
+    left_line=$(sed -n "${left_margin}p" "$coord_tmp")
+    left_lat=$(echo "$left_line" | awk '{print $1}')
+    left_lon=$(echo "$left_line" | awk '{print $2}')
+    left_distance=$(python3 ./haversine.py "$START_LAT" "$START_LON" "$left_lat" "$left_lon")
+
+    right_line=$(sed -n "${right_margin}p" "$coord_tmp")
+    right_lat=$(echo "$right_line" | awk '{print $1}')
+    right_lon=$(echo "$right_line" | awk '{print $2}')
+    right_distance=$(python3 ./haversine.py "$START_LAT" "$START_LON" "$right_lat" "$right_lon")
+
+    middle_distance=$(python3 ./haversine.py "$START_LAT" "$START_LON" "$middle_lat" "$middle_lon")
+
+    # Update the closest point if the middle point is closer
+    if (( $(printf "%.0f" "$middle_distance") < min_distance )); then
+      min_distance=$(printf "%.0f" "$middle_distance")
+      found_index="$middle_index"
+    fi
+
+    # Narrow the search space
+    if (( $(printf "%.0f" "$left_distance") < $(printf "%.0f" "$right_distance") )); then
+      right_margin=$((middle_index - 1))
+    else
+      left_margin=$((middle_index + 1))
     fi
   done
 
-  # Step 2: If no exact match, search for the closest point
-  if [ -z "$found_index" ]; then
-    log_debug "No exact match found. Finding the closest GPX point to ($START_LAT, $START_LON)..."
-    min_distance=999999999
-
-    for i in $(seq 1 "$num_points"); do
-      line=$(sed -n "${i}p" "$coord_tmp")
-      lat=$(echo "$line" | awk '{print $1}')
-      lon=$(echo "$line" | awk '{print $2}')
-      distance=$(python3 ./haversine.py "$START_LAT" "$START_LON" "$lat" "$lon")
-      distance_int=$(printf "%.0f" "$distance")
-
-      if [ "$distance_int" -lt "$min_distance" ]; then
-        min_distance="$distance_int"
-        found_index="$i"
-      fi
-    done
-    log_debug "Closest point found at index $found_index with distance $min_distance."
-  fi
 
   if [ -z "$found_index" ]; then
     log_debug "Error: Could not find a starting point near ($START_LAT, $START_LON)." >&2

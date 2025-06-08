@@ -3,10 +3,19 @@
 BASE_DIR="./locations"
 mkdir -p "$BASE_DIR"
 
-# Flag to enable or disable logging
+# Initialize variables
 ENABLE_DEBUG=false
-if [[ -n "$2" ]]; then
+END_TIME=""
+FAKE_TIME=""
+FAKE_TIME_SECONDS=0  # Used to track fake time in seconds
+
+# --- Parameter handling ---
+if [[ "$2" != "null" ]]; then
   ENABLE_DEBUG=true
+fi
+
+if [[ "$3" != "null" ]]; then
+  END_TIME="$3"
 fi
 
 log_debug() {
@@ -17,7 +26,23 @@ log_debug() {
   fi
 }
 
+if [[ "$4" != "null" ]]; then
+  FAKE_TIME="$4"
+  # Convert FAKE_TIME to seconds since midnight
+  fake_time_seconds=$((10#${FAKE_TIME:0:2} * 3600 + 10#${FAKE_TIME:2:2} * 60))
+
+  # Get the current real time in seconds since midnight
+  current_real_time_seconds=$(( $(date '+%H') * 3600 + $(date '+%M') * 60 ))
+
+  # Calculate the difference between fake time and real time
+  FAKE_TIME_DIFF=$((fake_time_seconds - current_real_time_seconds))
+  log_debug "FAKE_TIME_DIFF calculated: $FAKE_TIME_DIFF seconds"
+fi
+
 log_debug "Starting script with config file: $1"
+log_debug "Debug mode: $ENABLE_DEBUG"
+log_debug "End time: $END_TIME"
+log_debug "Fake time: $FAKE_TIME"
 
 if [[ -f "$1" ]]; then
   source "$1"
@@ -98,6 +123,34 @@ fi
 last_run=0
 
 while true; do
+  # Use fake time if provided, otherwise use the real current time
+  if [[ -n "$FAKE_TIME" ]]; then
+    # Get the current real time in seconds since midnight
+    current_real_time_seconds=$(( $(date '+%H') * 3600 + $(date '+%M') * 60 ))
+
+    # Calculate the current fake time in seconds
+    current_fake_time_seconds=$((current_real_time_seconds + FAKE_TIME_DIFF))
+
+    # Convert current fake time back to HHMM format
+    fake_hours=$((current_fake_time_seconds / 3600 % 24))
+    fake_minutes=$((current_fake_time_seconds % 3600 / 60))
+    FAKE_TIME=$(printf "%02d%02d" $fake_hours $fake_minutes)
+    current_time_hhmm="$FAKE_TIME"
+
+    # Debug logs for fake time
+    log_debug "Current fake time: $FAKE_TIME (calculated using FAKE_TIME_DIFF: $FAKE_TIME_DIFF)"
+  else
+    current_time_hhmm=$(date '+%H%M')
+  fi
+
+  # Check if END_TIME is defined and exit if the current time has reached or passed it
+  if [[ -n "$END_TIME" ]]; then
+    if [[ "$current_time_hhmm" -ge "$END_TIME" ]]; then
+      log_debug "End time $END_TIME reached. Exiting loop."
+      break
+    fi
+  fi
+
   current_time=$(date +%s)
   elapsed=$(( current_time - last_run ))
 
@@ -111,3 +164,13 @@ while true; do
   log_debug  "Sleeping for $sleep_time minutes..."
   sleep $((sleep_time * 60))
 done
+
+log_debug "Script completed. Exiting."
+# Check if the script is being sourced or executed directly
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  # Script is executed directly
+  exit 0  # Ensure the terminal regains control
+else
+  # Script is sourced or called by another script
+  return 0  # Ensure the calling script regains control
+fi
