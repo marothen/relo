@@ -1,13 +1,22 @@
-2025-06-09 16:21:04 - FAKE_TIME=, current_time=1621, FAKE_TIME_DIFF=-981 minutes
-2025-06-09 16:23:24 - FAKE_TIME=, current_time=1623, FAKE_TIME_DIFF=-983 minutes
-2025-06-09 16:23:24 - ./conf/relo/feldmoching/abasto.conf
-2025-06-09 16:23:25 - current_time=1623, FAKE_TIME_DIFF=-983, adjusted_time=0000
-2025-06-09 16:23:25 - Starting relo with config: ./conf/relo/feldmoching/abasto.conf and end_time: 2359
-2025-06-09 16:29:33 - FAKE_TIME=, current_time=1629, FAKE_TIME_DIFF=-989 minutes
-2025-06-09 16:29:33 - ./conf/relo/feldmoching/abasto.conf
-2025-06-09 16:29:34 - current_time=1629, FAKE_TIME_DIFF=-989, adjusted_time=0000
-2025-06-09 16:29:34 - Starting relo with config: ./conf/relo/feldmoching/abasto.conf and end_time: 2359
-2025-06-09 16:32:17 - FAKE_TIME=, current_time=1632, FAKE_TIME_DIFF=-992 minutes
-2025-06-09 16:32:17 - ./conf/relo/feldmoching/abasto.conf
-2025-06-09 16:32:18 - current_time=1632, FAKE_TIME_DIFF=-992, adjusted_time=0000
-2025-06-09 16:32:18 - Starting relo with config: ./conf/relo/feldmoching/abasto.conf and end_time: 2359
+2025-06-09 16:50:50 - FAKE_TIME=, current_time=1650, FAKE_TIME_DIFF=-1010 minutes
+2025-06-09 16:50:51 - ./conf/relo/feldmoching/contandino.conf
+2025-06-09 16:50:51 - current_time=1650, FAKE_TIME_DIFF=-1010, adjusted_time=0000
+2025-06-09 16:50:51 - Starting relo with config: ./conf/relo/feldmoching/contandino.conf and end_time: 2359
+2025-06-09 16:50:52 - Stopping relo with config: ./conf/relo/feldmoching/contandino.conf and end_time: 2359
+2025-06-09 16:51:50 - FAKE_TIME=, current_time=1651, FAKE_TIME_DIFF=-1011 minutes
+2025-06-09 16:51:50 - ./conf/relo/feldmoching/contandino.conf
+2025-06-09 16:51:51 - current_time=1651, FAKE_TIME_DIFF=-1011, adjusted_time=0000
+2025-06-09 16:51:51 - Starting relo with config: ./conf/relo/feldmoching/contandino.conf and end_time: 2359
+2025-06-09 16:51:52 - Stopping relo with config: ./conf/relo/feldmoching/contandino.conf and end_time: 2359
+2025-06-09 16:53:14 - FAKE_TIME=, current_time=1653, FAKE_TIME_DIFF=-1013 minutes
+2025-06-09 16:53:14 - ./conf/relo/feldmoching/contadino.conf
+2025-06-09 16:53:15 - current_time=1653, FAKE_TIME_DIFF=-1013, adjusted_time=0000
+2025-06-09 16:53:15 - Starting relo with config: ./conf/relo/feldmoching/contadino.conf and end_time: 2359
+2025-06-09 16:53:49 - FAKE_TIME=, current_time=1653, FAKE_TIME_DIFF=-1013 minutes
+2025-06-09 16:53:49 - ./conf/relo/muenchen_arbeit/cog.conf
+2025-06-09 16:53:49 - current_time=1653, FAKE_TIME_DIFF=-1013, adjusted_time=0000
+2025-06-09 16:53:49 - Starting relo with config: ./conf/relo/muenchen_arbeit/cog.conf and end_time: 2359
+2025-06-09 16:54:32 - FAKE_TIME=, current_time=1654, FAKE_TIME_DIFF=-1014 minutes
+2025-06-09 16:54:32 - ./conf/relo/feldmoching/tre_scalini.conf
+2025-06-09 16:54:32 - current_time=1654, FAKE_TIME_DIFF=-1014, adjusted_time=0000
+2025-06-09 16:54:32 - Starting relo with config: ./conf/relo/feldmoching/tre_scalini.conf and end_time: 2359

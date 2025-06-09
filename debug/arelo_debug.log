@@ -1,11 +1,71 @@
-2025-06-09 16:32:18 - Starting script with config file: ./conf/relo/feldmoching/abasto.conf
-2025-06-09 16:32:19 - Debug mode: true
-2025-06-09 16:32:19 - End time: 2359
-2025-06-09 16:32:19 - Fake time: 
-2025-06-09 16:32:19 - Coordinates: 48.21411469196222,  11.540722539025106
-2025-06-09 16:32:19 - Random radius: 0 meters
-2025-06-09 16:32:20 - New randomized coordinates: 48.2141146920, 11.5407225390
-2025-06-09 16:32:20 - Starting locsim with coordinates: 48.2141146920, 11.5407225390
-2025-06-09 16:32:20 - Position saved to ./track/location_latest.txt: (48.2141146920
-2025-06-09 16:32:20 - Error: 'locsim' is not installed or not in your PATH.
-2025-06-09 16:32:20 - Sleeping for 10 seconds...
+2025-06-09 16:50:52 - Starting script with config file: ./conf/relo/feldmoching/contandino.conf
+2025-06-09 16:50:52 - Debug mode: true
+2025-06-09 16:50:52 - End time: 2359
+2025-06-09 16:50:52 - Fake time: 
+2025-06-09 16:50:52 - Error: Config file './conf/relo/feldmoching/contandino.conf' not found.
+2025-06-09 16:51:51 - Starting script with config file: ./conf/relo/feldmoching/contandino.conf
+2025-06-09 16:51:51 - Debug mode: true
+2025-06-09 16:51:51 - End time: 2359
+2025-06-09 16:51:52 - Fake time: 
+2025-06-09 16:51:52 - Error: Config file './conf/relo/feldmoching/contandino.conf' not found.
+2025-06-09 16:53:15 - Starting script with config file: ./conf/relo/feldmoching/contadino.conf
+2025-06-09 16:53:15 - Debug mode: true
+2025-06-09 16:53:15 - End time: 2359
+2025-06-09 16:53:15 - Fake time: 
+2025-06-09 16:53:16 - Coordinates: 48.21472513198,  11.54437376933166
+2025-06-09 16:53:16 - Random radius: 1 meters
+2025-06-09 16:53:16 - New randomized coordinates: 48.2147221068, 11.5443864631
+2025-06-09 16:53:16 - Starting locsim with coordinates: 48.2147221068, 11.5443864631
+2025-06-09 16:53:16 - Position saved to ./track/location_latest.txt: (48.2147221068
+2025-06-09 16:53:17 - Error: 'locsim' is not installed or not in your PATH.
+2025-06-09 16:53:17 - Sleeping for 10 seconds...
+2025-06-09 16:53:27 - Not time yet for next cycle. Elapsed: 10 seconds.
+2025-06-09 16:53:27 - Position saved to ./track/location_latest.txt: (48.2147221068 11.5443864631)
+2025-06-09 16:53:27 - Error: 'locsim' is not installed or not in your PATH.
+2025-06-09 16:53:27 - Sleeping for 10 seconds...
+2025-06-09 16:53:50 - Starting script with config file: ./conf/relo/muenchen_arbeit/cog.conf
+2025-06-09 16:53:50 - Debug mode: true
+2025-06-09 16:53:50 - End time: 2359
+2025-06-09 16:53:50 - Fake time: 
+2025-06-09 16:53:50 - Coordinates: 48.189103,  11.583482
+2025-06-09 16:53:51 - Random radius: 1 meters
+2025-06-09 16:53:51 - New randomized coordinates: 48.1890994645, 11.5834943870
+2025-06-09 16:53:51 - Starting locsim with coordinates: 48.1890994645, 11.5834943870
+2025-06-09 16:53:51 - Position saved to ./track/location_latest.txt: (48.1890994645
+2025-06-09 16:53:51 - Error: 'locsim' is not installed or not in your PATH.
+2025-06-09 16:53:51 - Sleeping for 10 seconds...
+2025-06-09 16:54:01 - Not time yet for next cycle. Elapsed: 10 seconds.
+2025-06-09 16:54:01 - Position saved to ./track/location_latest.txt: (48.1890994645 11.5834943870)
+2025-06-09 16:54:01 - Error: 'locsim' is not installed or not in your PATH.
+2025-06-09 16:54:02 - Sleeping for 10 seconds...
+2025-06-09 16:54:12 - Not time yet for next cycle. Elapsed: 21 seconds.
+2025-06-09 16:54:12 - Position saved to ./track/location_latest.txt: (48.1890994645 11.5834943870)
+2025-06-09 16:54:12 - Error: 'locsim' is not installed or not in your PATH.
+2025-06-09 16:54:12 - Sleeping for 10 seconds...
+2025-06-09 16:54:22 - Not time yet for next cycle. Elapsed: 31 seconds.
+2025-06-09 16:54:22 - Position saved to ./track/location_latest.txt: (48.1890994645 11.5834943870)
+2025-06-09 16:54:22 - Error: 'locsim' is not installed or not in your PATH.
+2025-06-09 16:54:23 - Sleeping for 10 seconds...
+2025-06-09 16:54:33 - Starting script with config file: ./conf/relo/feldmoching/tre_scalini.conf
+2025-06-09 16:54:33 - Not time yet for next cycle. Elapsed: 42 seconds.
+2025-06-09 16:54:33 - Debug mode: true
+2025-06-09 16:54:33 - Position saved to ./track/location_latest.txt: (48.1890994645 11.5834943870)
+2025-06-09 16:54:33 - End time: 2359
+2025-06-09 16:54:33 - Fake time: 
+2025-06-09 16:54:33 - Error: 'locsim' is not installed or not in your PATH.
+2025-06-09 16:54:33 - Sleeping for 10 seconds...
+2025-06-09 16:54:33 - Coordinates: 48.2153370443286,  11.530529439845921
+2025-06-09 16:54:34 - Random radius: 1 meters
+2025-06-09 16:54:34 - New randomized coordinates: 48.2153451263, 11.5305353249
+2025-06-09 16:54:34 - Starting locsim with coordinates: 48.2153451263, 11.5305353249
+2025-06-09 16:54:34 - Position saved to ./track/location_latest.txt: (48.2153451263
+2025-06-09 16:54:34 - Error: 'locsim' is not installed or not in your PATH.
+2025-06-09 16:54:34 - Sleeping for 10 seconds...
+2025-06-09 16:54:43 - Not time yet for next cycle. Elapsed: 52 seconds.
+2025-06-09 16:54:43 - Position saved to ./track/location_latest.txt: (48.2153451263 11.5305353249)
+2025-06-09 16:54:44 - Error: 'locsim' is not installed or not in your PATH.
+2025-06-09 16:54:44 - Sleeping for 10 seconds...
+2025-06-09 16:54:44 - Not time yet for next cycle. Elapsed: 10 seconds.
+2025-06-09 16:54:45 - Position saved to ./track/location_latest.txt: (48.2153451263 11.5305353249)
+2025-06-09 16:54:45 - Error: 'locsim' is not installed or not in your PATH.
+2025-06-09 16:54:45 - Sleeping for 10 seconds...
