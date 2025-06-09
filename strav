@@ -1,6 +1,6 @@
 #!/bin/bash -i
 
-PID_FILE="/tmp/runpid.pid"
+PID_FILE="./track/runpid.pid"
 LOC_FILE="./track/location_latest.txt"
 
 # Select directory under ./rou
@@ -141,5 +141,16 @@ echo "Running: $cmd"
 
 # Start the atrav.sh script in background and disown
 bash -c "$cmd & echo \$! > $PID_FILE; disown"
+
+bash ./aseq.sh "$cmd" &
+NEW_PID=$!
+disown
+echo "aseq.sh started in the background."
+
+# Ensure the PID file exists
+touch "$PID_FILE"
+
+# Append the new PID as a new line to the PID file
+echo "$NEW_PID" >> "$PID_FILE"
 
 echo "Started atrav.sh with PID $(cat $PID_FILE)"

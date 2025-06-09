@@ -2,6 +2,12 @@
 
 BASE_DIR="./locations"
 mkdir -p "$BASE_DIR"
+LOCATION_LOG_FILE="./track/location_latest.txt"
+PID_FILE="./track/runpid.pid"
+touch "$PID_FILE"
+NEW_PID=$$
+# Append the new PID as a new line to the PID file
+echo "$NEW_PID" >> "$PID_FILE"
 
 # Initialize variables
 ENABLE_DEBUG=false
@@ -26,7 +32,7 @@ log_debug() {
   fi
 }
 
-if [[ "$4" != "null" ]]; then
+if [[ -n "$4" ]]; then
   FAKE_TIME="$4"
   # Convert FAKE_TIME to seconds since midnight
   fake_time_seconds=$((10#${FAKE_TIME:0:2} * 3600 + 10#${FAKE_TIME:2:2} * 60))
@@ -71,6 +77,9 @@ else
 fi
 
 safe_locsim_start() {
+
+  echo "$@" > "$LOCATION_LOG_FILE"
+  log_debug "Position saved to $LOCATION_LOG_FILE: ($@)"
   if ! command -v locsim >/dev/null 2>&1; then
     log_debug  "Error: 'locsim' is not installed or not in your PATH."
     return 1
@@ -111,8 +120,8 @@ run_spoof_cycle() {
 }
 
 if [[ -z "$sleep_time" ]]; then
-  sleep_time=1
-  log_debug "config" "'sleep_time' not defined in config. Defaulting to 1."
+  sleep_time=60
+  log_debug "config" "'sleep_time' not defined in config. Defaulting to 60 seconds."
 fi
 
 if [[ -z "$cycle_interval" ]]; then
@@ -158,15 +167,17 @@ while true; do
   current_time=$(date +%s)
   elapsed=$(( current_time - last_run ))
 
-  if (( elapsed >= cycle_interval * 60 )); then
+  if (( elapsed >= cycle_interval)); then
     run_spoof_cycle
     last_run=$(date +%s)
   else
     log_debug  "Not time yet for next cycle. Elapsed: $elapsed seconds."
+    read -r position < "$LOCATION_LOG_FILE"
+    safe_locsim_start "$position"
   fi
 
-  log_debug  "Sleeping for $sleep_time minutes..."
-  sleep $((sleep_time * 60))
+  log_debug  "Sleeping for $sleep_time seconds..."
+  sleep "$sleep_time"
 done
 
 log_debug "Script completed. Exiting."

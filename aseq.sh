@@ -1,12 +1,14 @@
 #!/bin/bash
 
+PID_FILE="./track/runpid.pid"
+
 # Get the config file from the first parameter
 CONFIG_FILE="$1"
 # Set debug mode based on the second parameter
 if [[ "$2" == "null" ]]; then
-  ENABLE_DEBUG=false
+  ENABLE_DEBUG="null"
 else
-  ENABLE_DEBUG=true
+  ENABLE_DEBUG="debug"
 fi
 
 # Set FAKE_TIME based on the third parameter
@@ -18,7 +20,7 @@ fi
 
 
 log_debug() {
-  if [[ "$ENABLE_DEBUG" == true ]]; then
+  if [[ "$ENABLE_DEBUG" == "debug" ]]; then
     local debug_file="./debug/aseq_debug.log"  # Path to the debug file
     mkdir -p "$(dirname "$debug_file")"        # Ensure the directory exists
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$debug_file"
@@ -30,8 +32,8 @@ current_time=$(date '+%H%M')
 
 # Split FAKE_TIME into hours and minutes if it is set
 if [[ -n "$FAKE_TIME" ]]; then
-  fake_hours=$((10#${FAKE_TIME:0:2}))  # Extract the first two digits (hours)
-  fake_minutes=$((10#${FAKE_TIME:2:2}))  # Extract the last two digits (minutes)
+  fake_hours=$((10#${FAKE_TIME:0:2}))
+  fake_minutes=$((10#${FAKE_TIME:2:2}))
 else
   fake_hours=0
   fake_minutes=0
@@ -62,19 +64,11 @@ send_discord_message() {
        "$DISCORD_WEBHOOK_URL"
 }
 
-log_debug() {
-  if [[ "$ENABLE_DEBUG" == true ]]; then
-    local debug_file="./debug/aseq_debug.log"  # Path to the debug file
-    mkdir -p "$(dirname "$debug_file")"        # Ensure the directory exists
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$debug_file"
-  fi
-}
-
 # Define the process_relo function
 process_relo() {
   log_debug "Starting relo with config: $1 and end_time: $2"
   send_discord_message "Starting relo with config: $1 and end_time: $2"
-  bash ./arelo.sh "$1" "debug" "$2" "$FAKE_TIME"
+  bash ./arelo.sh "$1" "$ENABLE_DEBUG" "$2" "$FAKE_TIME"
   log_debug "Stopping relo with config: $1 and end_time: $2"
   send_discord_message "Stopping relo with config: $1 and end_time: $2"
 }
@@ -100,7 +94,6 @@ process_trav() {
   file=$(echo "$file" | sed 's/^"//;s/"$//')
 
   bash ./atrav.sh $file "$speed" "$cycle_interval" "debug"
-
   log_debug "Stopping trav with config: $1"
   send_discord_message "Stopping trav with config: $1"
 }

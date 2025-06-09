@@ -1,6 +1,11 @@
 #!/bin/bash
 
 LOCATION_LOG_FILE="./track/location_latest.txt"
+PID_FILE="./track/runpid.pid"
+touch "$PID_FILE"
+NEW_PID=$$
+# Append the new PID as a new line to the PID file
+echo "$NEW_PID" >> "$PID_FILE"
 
 # --- 1. Read positional arguments ---
 GPX_FILE="$1"

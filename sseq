@@ -2,7 +2,7 @@
 
 # Base directory for configuration files
 BASE_DIR="./conf/seq"
-PID_FILE="/tmp/runpid.pid"
+PID_FILE="./track/runpid.pid"
 
 # Check if the base directory exists
 if [[ ! -d "$BASE_DIR" ]]; then
@@ -88,12 +88,16 @@ fi
 
 # Step 5: Start aseq.sh with the provided arguments
 echo "Starting aseq.sh with the selected file, debug mode, and fake time..."
-bash ./aseq.sh "$selected_file" "$DEBUG" "$FAKE_TIME" &  # Start in the background
+bash ./aseq.sh "$selected_file" "$DEBUG" "$FAKE_TIME" &
 NEW_PID=$!
-disown  # Detach the process from the terminal
+disown
 echo "aseq.sh started in the background."
 
-echo "$NEW_PID" > "$PID_FILE"
+# Ensure the PID file exists
+touch "$PID_FILE"
+
+# Append the new PID as a new line to the PID file
+echo "$NEW_PID" >> "$PID_FILE"
 echo "New process started with PID $NEW_PID."
 
 

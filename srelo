@@ -1,7 +1,7 @@
 #!/bin/bash -i
 
 CONFIG_BASE_DIR="./conf/relo"
-PID_FILE="/tmp/runpid.pid"
+PID_FILE="./track/runpid.pid"
 SCRIPT="./arelo.sh"
 
 # Flag to enable or disable logging
@@ -88,5 +88,9 @@ fi
 NEW_PID=$!
 disown
 
-echo "$NEW_PID" > "$PID_FILE"
+# Ensure the PID file exists
+touch "$PID_FILE"
+
+# Append the new PID as a new line to the PID file
+echo "$NEW_PID" >> "$PID_FILE"
 echo "New process started with PID $NEW_PID."

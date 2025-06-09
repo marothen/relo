@@ -1,0 +1,11 @@
+2025-06-09 16:32:18 - Starting script with config file: ./conf/relo/feldmoching/abasto.conf
+2025-06-09 16:32:19 - Debug mode: true
+2025-06-09 16:32:19 - End time: 2359
+2025-06-09 16:32:19 - Fake time: 
+2025-06-09 16:32:19 - Coordinates: 48.21411469196222,  11.540722539025106
+2025-06-09 16:32:19 - Random radius: 0 meters
+2025-06-09 16:32:20 - New randomized coordinates: 48.2141146920, 11.5407225390
+2025-06-09 16:32:20 - Starting locsim with coordinates: 48.2141146920, 11.5407225390
+2025-06-09 16:32:20 - Position saved to ./track/location_latest.txt: (48.2141146920
+2025-06-09 16:32:20 - Error: 'locsim' is not installed or not in your PATH.
+2025-06-09 16:32:20 - Sleeping for 10 seconds...

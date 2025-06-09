@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PID_FILE="/tmp/runpid.pid"
+PID_FILE="./track/runpid.pid"
 
 # Check if PID file exists
 if [ ! -f "$PID_FILE" ]; then
@@ -8,15 +8,16 @@ if [ ! -f "$PID_FILE" ]; then
   exit 0
 fi
 
-PID=$(cat "$PID_FILE")
-
-# Kill the process if it’s still running
-if kill -0 "$PID" 2>/dev/null; then
-  echo "Stopping process with PID $PID..."
-  kill "$PID"
-else
-  echo "No running process with PID $PID."
-fi
+# Iterate through each PID in the file and kill the process
+while IFS= read -r pid; do
+  if [[ -n "$pid" ]]; then
+    if kill -9 "$pid" > /dev/null 2>&1; then
+      echo "Killed process with PID $pid"
+    else
+      echo "Failed to kill process with PID $pid (it may not exist)"
+    fi
+  fi
+done < "$PID_FILE"
 
 # Remove the PID file
 rm -f "$PID_FILE"

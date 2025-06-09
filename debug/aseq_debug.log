@@ -1,0 +1,13 @@
+2025-06-09 16:21:04 - FAKE_TIME=, current_time=1621, FAKE_TIME_DIFF=-981 minutes
+2025-06-09 16:23:24 - FAKE_TIME=, current_time=1623, FAKE_TIME_DIFF=-983 minutes
+2025-06-09 16:23:24 - ./conf/relo/feldmoching/abasto.conf
+2025-06-09 16:23:25 - current_time=1623, FAKE_TIME_DIFF=-983, adjusted_time=0000
+2025-06-09 16:23:25 - Starting relo with config: ./conf/relo/feldmoching/abasto.conf and end_time: 2359
+2025-06-09 16:29:33 - FAKE_TIME=, current_time=1629, FAKE_TIME_DIFF=-989 minutes
+2025-06-09 16:29:33 - ./conf/relo/feldmoching/abasto.conf
+2025-06-09 16:29:34 - current_time=1629, FAKE_TIME_DIFF=-989, adjusted_time=0000
+2025-06-09 16:29:34 - Starting relo with config: ./conf/relo/feldmoching/abasto.conf and end_time: 2359
+2025-06-09 16:32:17 - FAKE_TIME=, current_time=1632, FAKE_TIME_DIFF=-992 minutes
+2025-06-09 16:32:17 - ./conf/relo/feldmoching/abasto.conf
+2025-06-09 16:32:18 - current_time=1632, FAKE_TIME_DIFF=-992, adjusted_time=0000
+2025-06-09 16:32:18 - Starting relo with config: ./conf/relo/feldmoching/abasto.conf and end_time: 2359
