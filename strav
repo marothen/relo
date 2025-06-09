@@ -114,16 +114,6 @@ if ! echo "$interval_seconds" | grep -Eq '^[0-9]+$'; then
   exit 1
 fi
 
-# Kill old process if running
-if [ -f "$PID_FILE" ]; then
-  old_pid=$(cat "$PID_FILE")
-  if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
-    echo "Killing old process with PID $old_pid"
-    kill "$old_pid"
-    sleep 1
-  fi
-fi
-
 
 # Build command with optional lat/lon
 cmd="./atrav.sh \"$chosen_file\" $speed_kmh $interval_seconds"
@@ -136,6 +126,9 @@ read -rp "Do you want to enable debugging? (y/n): " enable_debug
 if [[ "$enable_debug" =~ ^[Yy]$ ]]; then
   cmd="$cmd debug"
 fi
+
+# Step 5: Stop any existing processes
+bash ./stop
 
 echo "Running: $cmd"
 

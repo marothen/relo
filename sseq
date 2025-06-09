@@ -76,15 +76,8 @@ else
   echo "Debugging disabled."
 fi
 
-# Kill old process if running
-if [ -f "$PID_FILE" ]; then
-  old_pid=$(cat "$PID_FILE")
-  if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
-    echo "Killing old process with PID $old_pid"
-    kill "$old_pid"
-    sleep 1
-  fi
-fi
+# Step 5: Stop any existing processes
+bash ./stop
 
 # Step 5: Start aseq.sh with the provided arguments
 echo "Starting aseq.sh with the selected file, debug mode, and fake time..."
