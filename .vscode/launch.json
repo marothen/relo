@@ -36,7 +36,7 @@
         "request": "launch",
         "name": "arelo",
         "program": "${workspaceFolder}/arelo.sh",
-        "args": ["./conf/relo/muenchen_arbeit/cog.conf","debug","0736","0730"],
+        "args": ["./conf/relo/muenchen_arbeit/cog.conf","debug","null",""],
         "env": {},
         "cwd": "${workspaceFolder}",
         "bashdbPath": "${env:HOME}/bash-debug/install/bin/bashdb"
@@ -56,7 +56,7 @@
         "request": "launch",
         "name": "aseq",
         "program": "${workspaceFolder}/aseq.sh",
-        "args": ["./conf/seq/femo_tre_svalini.conf"],
+        "args": ["./conf/seq/femo_tre_svalini.conf","","1825"],
         "env": {},
         "cwd": "${workspaceFolder}",
         "bashdbPath": "${env:HOME}/bash-debug/install/bin/bashdb"

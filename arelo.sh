@@ -77,14 +77,21 @@ else
 fi
 
 safe_locsim_start() {
+  # Sanitize the input to remove extra spaces or invalid characters
+  sanitized_input=$(echo "$@" | tr -s ' ')
 
-  echo "$@" > "$LOCATION_LOG_FILE"
-  log_debug "Position saved to $LOCATION_LOG_FILE: ($@)"
+  # Save the sanitized input to the location log file
+  echo "$sanitized_input" > "$LOCATION_LOG_FILE"
+  log_debug "Position saved to $LOCATION_LOG_FILE: ($sanitized_input)"
+
+  # Check if locsim is installed
   if ! command -v locsim >/dev/null 2>&1; then
-    log_debug  "Error: 'locsim' is not installed or not in your PATH."
+    log_debug "Error: 'locsim' is not installed or not in your PATH."
     return 1
   fi
-  locsim start "$@"
+
+  # Start locsim with the sanitized input
+  locsim start $sanitized_input
 }
 
 select_random_location_from_file() {
