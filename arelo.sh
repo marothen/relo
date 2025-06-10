@@ -38,7 +38,7 @@ if [[ -n "$4" ]]; then
   fake_time_seconds=$((10#${FAKE_TIME:0:2} * 3600 + 10#${FAKE_TIME:2:2} * 60))
 
   # Get the current real time in seconds since midnight
-  current_real_time_seconds=$(( $(date '+%H') * 3600 + $(date '+%M') * 60 ))
+  current_real_time_seconds=$(( 10#$(date '+%H') * 3600 + 10#$(date '+%M') * 60 ))
 
   # Calculate the difference between fake time and real time
   FAKE_TIME_DIFF=$((fake_time_seconds - current_real_time_seconds))
