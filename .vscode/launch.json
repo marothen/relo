@@ -56,7 +56,7 @@
         "request": "launch",
         "name": "aseq",
         "program": "${workspaceFolder}/aseq.sh",
-        "args": ["./conf/seq/femo_tre_svalini.conf","","1825"],
+        "args": ["./conf/seq/femo/abasto_contadino.conf","debug","1914"],
         "env": {},
         "cwd": "${workspaceFolder}",
         "bashdbPath": "${env:HOME}/bash-debug/install/bin/bashdb"
