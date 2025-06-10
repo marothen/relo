@@ -142,7 +142,7 @@ while true; do
   # Use fake time if provided, otherwise use the real current time
   if [[ -n "$FAKE_TIME" ]]; then
     # Get the current real time in seconds since midnight
-    current_real_time_seconds=$(( $(date '+%H') * 3600 + $(date '+%M') * 60 ))
+    current_real_time_seconds=$(( 10#$(date '+%H') * 3600 + 10#$(date '+%M') * 60 ))
 
     # Calculate the current fake time in seconds
     current_fake_time_seconds=$((current_real_time_seconds + FAKE_TIME_DIFF))
