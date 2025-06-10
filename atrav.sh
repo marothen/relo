@@ -179,7 +179,7 @@ safe_locsim_start "$curr_lat" "$curr_lon"
 log_debug "Sleeping for $INTERVAL_SECONDS seconds before continuing..."
 sleep "$INTERVAL_SECONDS"
 
-SPEED=$(( SPEED_KMH * 1000 / 3600 ))
+SPEED=$(( SPEED_KMH * 2000 / 3600 ))
 
 while [ "$curr_index" -lt $(( num_points - 1 )) ]; do
   start_time=$(date +%s)
