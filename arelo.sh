@@ -165,9 +165,20 @@ while true; do
 
   # Check if END_TIME is defined and exit if the current time has reached or passed it
   if [[ -n "$END_TIME" ]]; then
-    if [[ $((10#$current_time_hhmm)) -ge $((10#$END_TIME)) ]]; then
-      log_debug "End time $END_TIME reached. Exiting loop."
-      break
+    if [[ $((10#$END_TIME)) -lt $((10#$current_time_hhmm)) ]]; then
+      # Handle wraparound at midnight
+      if [[ $((10#$current_time_hhmm)) -lt $((10#2400)) ]]; then
+        log_debug "End time $END_TIME not yet reached. Continuing loop."
+      else
+        log_debug "End time $END_TIME reached. Exiting loop."
+        break
+      fi
+    else
+      # Standard range
+      if [[ $((10#$current_time_hhmm)) -ge $((10#$END_TIME)) ]]; then
+        log_debug "End time $END_TIME reached. Exiting loop."
+        break
+      fi
     fi
   fi
 

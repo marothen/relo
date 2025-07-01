@@ -112,61 +112,83 @@ fi
 
 # Get the current time in HHMM format
 current_time=$(date '+%H%M')
+# Initialize the loop control variable based on the fourth parameter
+if [[ "$4" == "1" ]]; then
+  repeat=true
+else
+  repeat=false
+fi
 
-# Read the file line by line
-found_first_non_skipped_line=false
+while [[ "$repeat" == true ]]; do
+  # Read the file line by line
+  found_first_non_skipped_line=false  
+  while IFS=',' read -r type conf start_time end_time; do
+    log_debug $conf
+    # Trim any whitespace or invalid characters from start_time and end_time
+    start_time=$(echo "$start_time" | tr -d '[:space:]')
+    end_time=$(echo "$end_time" | tr -d '[:space:]')
 
-while IFS=',' read -r type conf start_time end_time; do
-  log_debug $conf
-  # Trim any whitespace or invalid characters from start_time and end_time
-  start_time=$(echo "$start_time" | tr -d '[:space:]')
-  end_time=$(echo "$end_time" | tr -d '[:space:]')
+    # Convert start_time and end_time to integers
+    start_time=$((10#$start_time))
+    end_time=$((10#$end_time))
 
-  # Convert start_time and end_time to integers
-  start_time=$((10#$start_time))
-  end_time=$((10#$end_time))
+    # Calculate the adjusted time based on FAKE_TIME_DIFF
+    # Split current_time into hours and minutes
+    current_time=$(date '+%H%M')
+    # Extract the first two digits (hours)
+    current_hours=$((10#${current_time:0:2})) 
+    # Extract the last two digits (minutes)
+    current_minutes=$((10#${current_time:2:2}))  
 
-  # Calculate the adjusted time based on FAKE_TIME_DIFF
-  # Split current_time into hours and minutes
-  current_time=$(date '+%H%M')
-   # Extract the first two digits (hours)
-  current_hours=$((10#${current_time:0:2})) 
-  # Extract the last two digits (minutes)
-  current_minutes=$((10#${current_time:2:2}))  
+    # Calculate total minutes by adding FAKE_TIME_DIFF
+    total_minutes=$((current_hours * 60 + current_minutes + FAKE_TIME_DIFF))
 
-  # Calculate total minutes by adding FAKE_TIME_DIFF
-  total_minutes=$((current_hours * 60 + current_minutes + FAKE_TIME_DIFF))
+    # Convert total minutes back to HHMM format
+    adjusted_hours=$((total_minutes / 60 % 24))
+    adjusted_minutes=$((total_minutes % 60))
 
-  # Convert total minutes back to HHMM format
-  adjusted_hours=$((total_minutes / 60 % 24))
-  adjusted_minutes=$((total_minutes % 60))
+    # Format adjusted_time as HHMM
+    adjusted_time=$(printf "%02d%02d" $adjusted_hours $adjusted_minutes)
 
-  # Format adjusted_time as HHMM
-  adjusted_time=$(printf "%02d%02d" $adjusted_hours $adjusted_minutes)
+    # Debug log for adjusted time
+    log_debug "current_time=$current_time, FAKE_TIME_DIFF=$FAKE_TIME_DIFF, adjusted_time=$adjusted_time"
 
-  # Debug log for adjusted time
-  log_debug "current_time=$current_time, FAKE_TIME_DIFF=$FAKE_TIME_DIFF, adjusted_time=$adjusted_time"
+    # Sanitize end_time and adjusted_time to remove any invalid characters or whitespace
+    end_time=$(echo "$end_time" | tr -d '[:space:]')
+    adjusted_time=$(echo "$adjusted_time" | tr -d '[:space:]')
+    
+    # Skip lines where end_time is smaller than the current time, but only until the first non-skipped line is found
+    if [[ "$found_first_non_skipped_line" == false ]]; then
+      if [[ "$end_time" -lt "$start_time" ]]; then
+        # Handle wraparound at midnight
+        if [[ "$adjusted_time" -ge "$start_time" || "$adjusted_time" -le "$end_time" ]]; then
+          log_debug "Adjusted time $adjusted_time is within the range $start_time to $end_time (wraparound)."
+        else
+          log_debug "Adjusted time $adjusted_time is outside the range $start_time to $end_time (wraparound)."
+          continue
+        fi
+      else
+        # Standard range
+        if [[ "$adjusted_time" -ge "$start_time" && "$adjusted_time" -le "$end_time" ]]; then
+          log_debug "Adjusted time $adjusted_time is within the range $start_time to $end_time."
+        else
+          log_debug "Adjusted time $adjusted_time is outside the range $start_time to $end_time."
+          continue
+        fi
+      fi
+    fi
 
-  # Sanitize end_time and adjusted_time to remove any invalid characters or whitespace
-  end_time=$(echo "$end_time" | tr -d '[:space:]')
-  adjusted_time=$(echo "$adjusted_time" | tr -d '[:space:]')
-  
-  # Skip lines where end_time is smaller than the current time, but only until the first non-skipped line is found
-  if [[ "$found_first_non_skipped_line" == false && $((10#$end_time)) -lt $((10#$adjusted_time)) ]]; then
-    log_debug "Skipping line with end_time=$end_time (smaller than adjusted_time=$adjusted_time)"
-    continue
-  fi
+    # Mark that the first non-skipped line has been found
+    found_first_non_skipped_line=true
 
-  # Mark that the first non-skipped line has been found
-  found_first_non_skipped_line=true
-
-  # Call the appropriate function based on the type
-  if [[ "$type" == "relo" ]]; then
-    process_relo "$conf" "$end_time"
-  elif [[ "$type" == "trav" ]]; then
-    process_trav "$conf"
-  else
-    log_debug "Error: Unknown type '$type'. Exiting."
-    exit 1
-  fi
-done < "$CONFIG_FILE"
+    # Call the appropriate function based on the type
+    if [[ "$type" == "relo" ]]; then
+      process_relo "$conf" "$end_time"
+    elif [[ "$type" == "trav" ]]; then
+      process_trav "$conf"
+    else
+      log_debug "Error: Unknown type '$type'. Exiting."
+      exit 1
+    fi
+  done < "$CONFIG_FILE"
+done

@@ -66,6 +66,15 @@ else
   echo "No fake time defined."
 fi
 
+read -p "Do you want to loop the execution? (y/n): " loop_choice
+if [[ "$loop_choice" =~ ^[Yy]$ ]]; then
+  loop_it="1"
+  echo "Looping enabled."
+else
+  loop_it="0"
+  echo "Looping disabled."
+fi
+
 # Step 4: Ask the user if they want to enable debugging
 read -p "Do you want to enable debugging? (y/n): " enable_debug
 if [[ "$enable_debug" =~ ^[Yy]$ ]]; then
@@ -81,7 +90,7 @@ bash ./stop
 
 # Step 5: Start aseq.sh with the provided arguments
 echo "Starting aseq.sh with the selected file, debug mode, and fake time..."
-bash ./aseq.sh "$selected_file" "$DEBUG" "$FAKE_TIME" &
+bash ./aseq.sh "$selected_file" "$DEBUG" "$FAKE_TIME" "$loop_it" &
 NEW_PID=$!
 disown
 echo "aseq.sh started in the background."
